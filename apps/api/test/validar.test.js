@@ -43,3 +43,12 @@ test('rango de lectura', () => {
   assert.throws(() => rango('2026-12-06', '2026-10-26'), E);
   assert.throws(() => rango('2026-01-01', '2026-12-31'), E);
 });
+
+test('cuota de fechas: de 3 años atrás a 2 adelante', () => {
+  const { fechaEditable } = require('../src/validar');
+  const hoy = new Date('2026-10-24T12:00:00Z');
+  assert.strictEqual(fechaEditable('2023-10-24', hoy), '2023-10-24');
+  assert.strictEqual(fechaEditable('2028-10-24', hoy), '2028-10-24');
+  assert.throws(() => fechaEditable('2023-10-23', hoy), E);
+  assert.throws(() => fechaEditable('2028-10-25', hoy), E);
+});

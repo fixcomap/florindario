@@ -109,3 +109,16 @@ input:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
 .quitar { margin-bottom: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #fbe4e8; color: var(--rojo); font-size: 1.2rem; cursor: pointer; }
 .acciones { display: grid; gap: 4px; margin-top: 8px; }
 .acciones .enlace { margin-top: 8px; justify-self: center; }
+
+/* ---------- cuenta, alta y legales ---------- */
+.menu { display: flex; gap: 14px; align-items: center; }
+.menu a { color: var(--acento); }
+.alta, .cuenta, .legal { padding: 4vh 6px 0; }
+.alta h1, .cuenta h1, .legal h1 { font-family: var(--titulo); font-weight: 600; font-size: 1.8rem; margin: 0 0 6px; }
+.legal h2 { font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; margin: 20px 0 4px; }
+.legal p { line-height: 1.55; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; color: var(--tinta); }
+.casilla input { width: auto; margin-top: 3px; }
+.legal-pie { margin-top: 18px; font-size: 0.85rem; }
+.legal-pie a, .alta a, .cuenta a, .legal a { color: var(--acento); }
+.boton.peligro { color: var(--rojo); border-color: #f0c8cf; }
