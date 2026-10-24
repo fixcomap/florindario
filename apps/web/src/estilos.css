@@ -122,3 +122,28 @@ input:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
 .legal-pie { margin-top: 18px; font-size: 0.85rem; }
 .legal-pie a, .alta a, .cuenta a, .legal a { color: var(--acento); }
 .boton.peligro { color: var(--rojo); border-color: #f0c8cf; }
+
+/* ---------- elegir varios días y plantillas ---------- */
+.herramientas { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin: 0 0 10px; min-height: 36px; font-size: 0.85rem; }
+.chip { padding: 8px 12px; border: 1px solid var(--borde); border-radius: 999px; background: var(--panel); color: var(--tinta); font: inherit; font-size: 0.88rem; text-decoration: none; cursor: pointer; }
+.dia.elegido { outline: 3px solid var(--acento); outline-offset: -1px; }
+.semana-total.elegir { border: 1px dashed var(--borde); border-radius: 10px; background: var(--panel); color: var(--acento); font-size: 1rem; cursor: pointer; }
+main.con-barra { padding-bottom: 90px; }
+.barra-eleccion { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 8px; align-items: center; justify-content: center; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); background: var(--panel); box-shadow: 0 -6px 24px rgba(47, 42, 51, 0.14); }
+.barra-eleccion .boton { width: auto; margin: 0; padding: 11px 16px; }
+.lista-plantillas { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 8px; }
+.lista-plantillas li { display: flex; gap: 8px; align-items: center; }
+.lista-plantillas li > button:first-child { flex: 1; display: grid; gap: 2px; text-align: left; padding: 12px; border: 1px solid var(--borde); border-radius: 12px; background: var(--panel); color: var(--tinta); font: inherit; cursor: pointer; }
+.lista-plantillas .quitar { margin: 0; }
+.plantillas { padding: 2vh 4px 0; }
+.plantillas h1 { font-family: var(--titulo); font-weight: 600; font-size: 1.7rem; margin: 6px 0; }
+.plantillas h2 { font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; margin: 22px 0 8px; }
+.plantillas a { color: var(--acento); }
+.bases { display: flex; flex-wrap: wrap; gap: 8px; }
+.semana-plantilla { list-style: none; padding: 0; margin: 6px 0; }
+.semana-plantilla li { padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.fila-dia { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.fila-dia select { padding: 8px; font-size: 0.95rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--tinta); }
+.semana-plantilla .tramos { margin-top: 4px; }
+.semana-plantilla .tramo label { margin: 4px 0; }
+.pie-tramos { display: flex; justify-content: space-between; align-items: center; margin: 4px 0; }

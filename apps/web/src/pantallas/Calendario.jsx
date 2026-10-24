@@ -4,14 +4,19 @@ import { DIAS_CORTOS, desdeIso, hoy, nombreMes, semanasDelMes } from '../fechas.
 import { horas, minutosDelDia, tramoCorto } from '../horas.js';
 import { TIPOS, tipo } from '../datos/tipos.js';
 import EditorDia from '../componentes/EditorDia.jsx';
+import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 
 // Mes de lunes a domingo: cada día con su tipo y su horario, las horas de cada
-// semana a la derecha y el total del mes abajo. Tocar un día lo edita.
+// semana a la derecha y el total del mes abajo. Tocar un día lo edita; en modo
+// "Elegir días" se marcan varios (o semanas enteras) y se cargan de una vez.
 export default function Calendario() {
   const ahora = new Date();
   const [mes, setMes] = useState({ anio: ahora.getFullYear(), mes: ahora.getMonth() });
   const [dias, setDias] = useState({}); // fecha -> día
-  const [editando, setEditando] = useState(null);
+  const [plantillas, setPlantillas] = useState([]);
+  const [eligiendo, setEligiendo] = useState(false);
+  const [elegidos, setElegidos] = useState(() => new Set());
+  const [hoja, setHoja] = useState(null); // { tipo: 'editar' | 'plantilla', fechas }
   const [error, setError] = useState('');
 
   const semanas = useMemo(() => semanasDelMes(mes.anio, mes.mes), [mes]);
@@ -24,24 +29,51 @@ export default function Calendario() {
       .catch((err) => setError(err.message));
   }, [desde, hasta]);
   useEffect(cargar, [cargar]);
+  useEffect(() => { pedir('/plantillas').then(setPlantillas).catch(() => {}); }, []);
 
   const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
   const totalMes = Object.values(dias).filter((d) => delMes(d.fecha)).reduce((s, d) => s + minutosDelDia(d), 0);
 
-  const guardado = (fecha, d) => setDias((todos) => {
-    const copia = { ...todos };
-    if (d) copia[fecha] = d;
-    else delete copia[fecha];
-    return copia;
+  const alternar = (fechas) => setElegidos((actual) => {
+    const nuevo = new Set(actual);
+    const todas = fechas.every((f) => nuevo.has(f));
+    fechas.forEach((f) => (todas ? nuevo.delete(f) : nuevo.add(f)));
+    return nuevo;
   });
+  const terminar = () => { setEligiendo(false); setElegidos(new Set()); };
+  const tocar = (f) => (eligiendo ? alternar([f]) : setHoja({ tipo: 'editar', fechas: [f] }));
+  const ordenados = [...elegidos].sort();
+
+  const guardado = ({ guardados, borrados }) => {
+    setDias((todos) => {
+      const copia = { ...todos };
+      borrados.forEach((f) => delete copia[f]);
+      guardados.forEach((d) => { copia[d.fecha] = d; });
+      return copia;
+    });
+    terminar();
+  };
 
   return (
-    <main>
+    <main className={eligiendo ? 'con-barra' : ''}>
       <div className="mes">
         <button className="flecha" onClick={() => mover(-1)} aria-label="Mes anterior">‹</button>
         <h1>{nombreMes(mes.anio, mes.mes)}</h1>
         <button className="flecha" onClick={() => mover(1)} aria-label="Mes siguiente">›</button>
+      </div>
+      <div className="herramientas">
+        {eligiendo ? (
+          <>
+            <span className="tenue">Tocá días o el total de una semana</span>
+            <button className="chip" onClick={() => alternar(semanas.flat().filter(delMes))}>Todo el mes</button>
+          </>
+        ) : (
+          <>
+            <button className="chip" onClick={() => setEligiendo(true)}>☑ Elegir días</button>
+            <a className="chip" href="/plantillas">Plantillas</a>
+          </>
+        )}
       </div>
       {error && <p className="error">{error}</p>}
 
@@ -49,7 +81,8 @@ export default function Calendario() {
         {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
         <div className="cabeza">h</div>
         {semanas.map((semana) => (
-          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} editar={setEditando} />
+          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar}
+            elegidos={elegidos} eligiendo={eligiendo} elegirSemana={() => alternar(semana)} />
         ))}
       </div>
 
@@ -58,27 +91,42 @@ export default function Calendario() {
         {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}
       </ul>
 
-      {editando && (
-        <EditorDia fecha={editando} dia={dias[editando]} cerrar={() => setEditando(null)} guardado={guardado} />
+      {eligiendo && (
+        <div className="barra-eleccion">
+          <span><strong>{elegidos.size}</strong> {elegidos.size === 1 ? 'día' : 'días'}</span>
+          <button className="boton" disabled={!elegidos.size} onClick={() => setHoja({ tipo: 'plantilla', fechas: ordenados })}>Plantilla</button>
+          <button className="boton secundario" disabled={!elegidos.size} onClick={() => setHoja({ tipo: 'editar', fechas: ordenados })}>Horario</button>
+          <button className="enlace" onClick={terminar}>Cancelar</button>
+        </div>
+      )}
+
+      {hoja?.tipo === 'editar' && (
+        <EditorDia fechas={hoja.fechas} dia={hoja.fechas.length === 1 ? dias[hoja.fechas[0]] : undefined}
+          cerrar={() => setHoja(null)} guardado={guardado} />
+      )}
+      {hoja?.tipo === 'plantilla' && (
+        <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} cerrar={() => setHoja(null)} guardado={guardado} />
       )}
     </main>
   );
 }
 
-function Semana({ semana, dias, delMes, editar }) {
+function Semana({ semana, dias, delMes, tocar, elegidos, eligiendo, elegirSemana }) {
   const total = semana.reduce((s, f) => s + minutosDelDia(dias[f]), 0);
   return (
     <>
       {semana.map((f) => {
         const d = dias[f];
         const t = d && tipo(d.tipo);
+        const elegido = elegidos.has(f);
         return (
           <button
             key={f}
             role="gridcell"
-            className={`dia${delMes(f) ? '' : ' fuera'}${f === hoy() ? ' hoy' : ''}`}
+            className={`dia${delMes(f) ? '' : ' fuera'}${f === hoy() ? ' hoy' : ''}${elegido ? ' elegido' : ''}`}
             style={t ? { background: t.fondo, borderColor: t.color } : undefined}
-            onClick={() => editar(f)}
+            onClick={() => tocar(f)}
+            aria-pressed={eligiendo ? elegido : undefined}
             aria-label={`${f}${t ? `, ${t.nombre}` : ', sin cargar'}`}
           >
             <span className="numero">{desdeIso(f).getDate()}</span>
@@ -90,7 +138,11 @@ function Semana({ semana, dias, delMes, editar }) {
           </button>
         );
       })}
-      <div className="semana-total" role="gridcell">{total ? horas(total).replace(' h ', ':').replace(' h', '') : ''}</div>
+      {eligiendo ? (
+        <button className="semana-total elegir" onClick={elegirSemana} aria-label="Elegir la semana">☑</button>
+      ) : (
+        <div className="semana-total" role="gridcell">{total ? horas(total).replace(' h ', ':').replace(' h', '') : ''}</div>
+      )}
     </>
   );
 }

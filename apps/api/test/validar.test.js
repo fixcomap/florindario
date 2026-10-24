@@ -52,3 +52,24 @@ test('cuota de fechas: de 3 años atrás a 2 adelante', () => {
   assert.throws(() => fechaEditable('2023-10-23', hoy), E);
   assert.throws(() => fechaEditable('2028-10-25', hoy), E);
 });
+
+test('plantilla: 7 días, null = no tocar, al menos uno cargado', () => {
+  const { plantilla } = require('../src/validar');
+  const m = { tipo: 'trabajo', tramos: [{ inicio: '09:00', fin: '13:00' }] };
+  const p = plantilla({ nombre: ' Mañana  L–S ', dias: [m, m, m, m, m, m, { tipo: 'libre' }] });
+  assert.strictEqual(p.nombre, 'Mañana L–S');
+  assert.deepStrictEqual(p.dias[6], { tipo: 'libre', tramos: [] });
+  assert.strictEqual(plantilla({ nombre: 'Finde', dias: [null, null, null, null, null, m, m] }).dias[0], null);
+  assert.throws(() => plantilla({ nombre: 'Nada', dias: Array(7).fill(null) }), E);
+  assert.throws(() => plantilla({ nombre: 'Corta', dias: [m] }), E);
+});
+
+test('lote: fechas válidas, sin repetir, máximo 93', () => {
+  const { lote } = require('../src/validar');
+  const hoy = new Date('2026-10-24T12:00:00Z');
+  const l = lote({ dias: [{ fecha: '2026-10-26', tipo: 'libre' }], borrar: ['2026-10-27'] }, hoy);
+  assert.strictEqual(l.dias[0].tipo, 'libre');
+  assert.throws(() => lote({ dias: [{ fecha: '2026-10-26', tipo: 'libre' }], borrar: ['2026-10-26'] }, hoy), E);
+  assert.throws(() => lote({}, hoy), E);
+  assert.throws(() => lote({ borrar: Array.from({ length: 94 }, (_, i) => `2026-11-${String((i % 28) + 1).padStart(2, '0')}`) }, hoy), E);
+});

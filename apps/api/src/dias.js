@@ -2,7 +2,7 @@
 const express = require('express');
 const pool = require('./db');
 const { protegerApp } = require('./cuentas');
-const { ErrorValidacion, fecha, fechaEditable, dia, rango } = require('./validar');
+const { ErrorValidacion, fecha, fechaEditable, dia, rango, lote } = require('./validar');
 
 function manejar(fn) {
   return async (req, res, next) => {
@@ -40,6 +40,33 @@ router.put('/dias/:fecha', manejar(async (req, res) => {
     [req.usuario.id, f, d.tipo, JSON.stringify(d.tramos), d.nota]
   );
   res.json(rows[0]);
+}));
+
+// Varios días de una vez (selección múltiple o plantilla aplicada), en una transacción.
+router.put('/dias', manejar(async (req, res) => {
+  const { dias, borrar } = lote(req.body);
+  const cliente = await pool.connect();
+  try {
+    await cliente.query('BEGIN');
+    const guardados = [];
+    for (const d of dias) {
+      const { rows } = await cliente.query(
+        `INSERT INTO dias (usuario_id, fecha, tipo, tramos, nota) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (usuario_id, fecha) DO UPDATE SET tipo = EXCLUDED.tipo, tramos = EXCLUDED.tramos, nota = EXCLUDED.nota
+         RETURNING to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, tramos, nota`,
+        [req.usuario.id, d.fecha, d.tipo, JSON.stringify(d.tramos), d.nota]
+      );
+      guardados.push(rows[0]);
+    }
+    if (borrar.length) await cliente.query('DELETE FROM dias WHERE usuario_id = $1 AND fecha = ANY($2::date[])', [req.usuario.id, borrar]);
+    await cliente.query('COMMIT');
+    res.json({ guardados, borrados: borrar });
+  } catch (err) {
+    await cliente.query('ROLLBACK');
+    throw err;
+  } finally {
+    cliente.release();
+  }
 }));
 
 // Dejar el día sin cargar.
