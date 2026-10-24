@@ -73,3 +73,14 @@ test('lote: fechas válidas, sin repetir, máximo 93', () => {
   assert.throws(() => lote({}, hoy), E);
   assert.throws(() => lote({ borrar: Array.from({ length: 94 }, (_, i) => `2026-11-${String((i % 28) + 1).padStart(2, '0')}`) }, hoy), E);
 });
+
+test('horas extra y libre compensado', () => {
+  const t8 = { tipo: 'trabajo', tramos: [{ inicio: '07:00', fin: '15:00' }] };
+  assert.deepStrictEqual(dia({ ...t8, extra: { minutos: 120, pago: 'dinero', cobrada: true } }).extra, { minutos: 120, pago: 'dinero', cobrada: true });
+  assert.strictEqual(dia({ ...t8, extra: { minutos: 60, pago: 'horas', cobrada: true } }).extra.cobrada, false);
+  assert.throws(() => dia({ ...t8, extra: { minutos: 500, pago: 'horas' } }), E);
+  assert.throws(() => dia({ ...t8, extra: { minutos: 60 } }), E);
+  assert.strictEqual(dia({ tipo: 'libre', extra: { minutos: 60, pago: 'horas' } }).extra, null);
+  assert.strictEqual(dia({ tipo: 'compensado', compensa: 480 }).compensa, 480);
+  assert.throws(() => dia({ tipo: 'compensado' }), E);
+});
