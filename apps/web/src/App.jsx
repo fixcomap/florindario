@@ -1,19 +1,38 @@
 import { useEffect, useState } from 'react';
-import { pedir } from './api.js';
+import { pedir, URL_API } from './api.js';
+import Logo from './componentes/Logo.jsx';
+import Calendario from './pantallas/Calendario.jsx';
 
-// Fase 1: confirma que front, API y base están conectados.
 export default function App() {
-  const [estado, setEstado] = useState('comprobando…');
+  const [usuario, setUsuario] = useState(undefined); // undefined = cargando, null = sin sesión
   useEffect(() => {
-    pedir('/salud')
-      .then((r) => setEstado(r.ok ? 'API y base de datos funcionando' : 'la API no ve la base'))
-      .catch(() => setEstado('no se pudo conectar con la API'));
+    pedir('/auth/yo').then(setUsuario).catch(() => setUsuario(null));
   }, []);
+
+  const salir = () => pedir('/auth/salir', { method: 'POST' }).finally(() => window.location.assign('/'));
+
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 480, margin: '15vh auto', padding: 16, textAlign: 'center' }}>
-      <h1>Florindario</h1>
-      <p>Tu calendario de turnos.</p>
-      <p><small>{estado}</small></p>
+    <div className="app">
+      <header className="cabecera">
+        <a href="/" className="marca"><Logo className="logo" /> Florindario</a>
+        {usuario && <button className="enlace" onClick={salir}>Salir</button>}
+      </header>
+      {usuario === undefined && <p className="centro tenue">Cargando…</p>}
+      {usuario === null && <Bienvenida />}
+      {usuario && <Calendario />}
+    </div>
+  );
+}
+
+function Bienvenida() {
+  const errorLogin = new URLSearchParams(window.location.search).get('error') === 'login';
+  return (
+    <main className="bienvenida">
+      <Logo className="logo-grande" />
+      <h1>Tu calendario de turnos</h1>
+      <p>Cargá tus jornadas de mañana, tarde o noche, tus libres y vacaciones, y mirá cuántas horas suma cada semana.</p>
+      {errorLogin && <p className="error">No se pudo entrar con Google. Probá de nuevo.</p>}
+      <a className="boton" href={`${URL_API}/auth/login`}>Entrar con Google</a>
     </main>
   );
 }
