@@ -5,6 +5,8 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 const pool = require('./db');
 const auth = require('./auth');
+const dias = require('./dias');
+const cuentas = require('./cuentas');
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.get('/salud', async (req, res) => {
 });
 
 app.use('/auth', auth.router);
+app.use(cuentas.router);
+app.use(dias);
 
 app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 

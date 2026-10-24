@@ -1,0 +1,124 @@
+/* Florindario: cálido y claro, móvil primero. Fraunces (serif) para títulos y
+   números; el resto, la fuente del sistema. */
+:root {
+  --fondo: #fbf7f2;
+  --panel: #ffffff;
+  --tinta: #2f2a33;
+  --tenue: #7a7280;
+  --borde: #ece4da;
+  --acento: #c2577a;
+  --hoja: #5f8a66;
+  --rojo: #b3261e;
+  --titulo: 'Fraunces', Georgia, serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--tinta);
+  background: var(--fondo);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40% at 50% -10%, #f6e3ea 0%, rgba(251, 247, 242, 0) 70%), var(--fondo); }
+.app { max-width: 620px; margin: 0 auto; padding: 0 12px 48px; }
+.cabecera { display: flex; justify-content: space-between; align-items: center; padding: 14px 4px 4px; }
+.marca { display: inline-flex; align-items: center; gap: 8px; font-family: var(--titulo); font-size: 1.4rem; font-weight: 600; color: var(--tinta); text-decoration: none; }
+.logo { width: 30px; height: 30px; }
+.centro { text-align: center; margin-top: 12vh; }
+.tenue { color: var(--tenue); }
+.error { color: var(--rojo); }
+.enlace { background: none; border: 0; padding: 0; color: var(--acento); font: inherit; cursor: pointer; text-decoration: underline; }
+
+.boton {
+  display: inline-block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 13px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--acento);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.boton:disabled { opacity: 0.6; }
+.boton.secundario { background: transparent; color: var(--tinta); border: 1px solid var(--borde); }
+
+/* ---------- bienvenida ---------- */
+.bienvenida { text-align: center; padding: 8vh 12px 0; }
+.logo-grande { width: 96px; height: 96px; }
+.bienvenida h1 { font-family: var(--titulo); font-weight: 600; font-size: 2rem; margin: 14px 0 8px; }
+.bienvenida p { color: var(--tenue); line-height: 1.5; }
+
+/* ---------- mes ---------- */
+.mes { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 12px; }
+.mes h1 { margin: 0; font-family: var(--titulo); font-weight: 600; font-size: 1.6rem; text-transform: capitalize; }
+.flecha { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--borde); background: var(--panel); font-size: 1.4rem; color: var(--tinta); cursor: pointer; }
+
+.cuadricula { display: grid; grid-template-columns: repeat(7, 1fr) 36px; gap: 4px; }
+.cabeza { text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--tenue); padding-bottom: 2px; }
+.dia {
+  min-height: 62px;
+  padding: 4px 3px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--tinta);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.dia .numero { font-family: var(--titulo); font-size: 0.95rem; font-weight: 600; line-height: 1; }
+.dia .contenido { display: flex; flex-direction: column; font-size: 0.68rem; font-weight: 600; line-height: 1.25; letter-spacing: -0.2px; }
+.dia.fuera { opacity: 0.38; }
+.dia.hoy .numero { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--acento); color: #fff; font-size: 0.8rem; }
+.semana-total { display: grid; place-items: center; font-family: var(--titulo); font-weight: 600; font-size: 0.85rem; color: var(--hoja); }
+
+.total-mes { text-align: right; margin: 14px 4px 6px; color: var(--tenue); }
+.total-mes strong { font-family: var(--titulo); font-size: 1.3rem; color: var(--tinta); }
+.leyenda { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 4px; margin: 6px 0; font-size: 0.8rem; color: var(--tenue); }
+.leyenda span { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+
+/* ---------- hoja para editar un día ---------- */
+.fondo-hoja { position: fixed; inset: 0; z-index: 10; background: rgba(47, 42, 51, 0.35); display: flex; align-items: flex-end; justify-content: center; }
+.hoja {
+  width: 100%;
+  max-width: 620px;
+  max-height: 92vh;
+  overflow: auto;
+  padding: 18px 16px 24px;
+  background: var(--panel);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 30px rgba(47, 42, 51, 0.18);
+}
+.hoja h2 { margin: 0 0 12px; font-family: var(--titulo); font-weight: 600; font-size: 1.35rem; }
+.hoja h2::first-letter { text-transform: uppercase; }
+.tipos { display: flex; flex-wrap: wrap; gap: 8px; }
+.tipos button { flex: 1 1 auto; padding: 9px 10px; border: 1px solid var(--borde); border-radius: 999px; background: var(--fondo); color: var(--tinta); font-size: 0.92rem; cursor: pointer; }
+.tipos button.activo { font-weight: 700; }
+.tramos { margin-top: 14px; }
+.tramo { display: flex; align-items: flex-end; gap: 8px; }
+.tramo label { flex: 1; }
+label { display: block; margin: 10px 0; font-size: 0.8rem; color: var(--tenue); }
+input { display: block; width: 100%; margin-top: 4px; padding: 11px; font-size: 1rem; color: var(--tinta); background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px; }
+input:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+.quitar { margin-bottom: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #fbe4e8; color: var(--rojo); font-size: 1.2rem; cursor: pointer; }
+.acciones { display: grid; gap: 4px; margin-top: 8px; }
+.acciones .enlace { margin-top: 8px; justify-self: center; }
+
+/* ---------- cuenta, alta y legales ---------- */
+.menu { display: flex; gap: 14px; align-items: center; }
+.menu a { color: var(--acento); }
+.alta, .cuenta, .legal { padding: 4vh 6px 0; }
+.alta h1, .cuenta h1, .legal h1 { font-family: var(--titulo); font-weight: 600; font-size: 1.8rem; margin: 0 0 6px; }
+.legal h2 { font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; margin: 20px 0 4px; }
+.legal p { line-height: 1.55; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; color: var(--tinta); }
+.casilla input { width: auto; margin-top: 3px; }
+.legal-pie { margin-top: 18px; font-size: 0.85rem; }
+.legal-pie a, .alta a, .cuenta a, .legal a { color: var(--acento); }
+.boton.peligro { color: var(--rojo); border-color: #f0c8cf; }
