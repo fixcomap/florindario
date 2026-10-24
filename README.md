@@ -33,7 +33,7 @@ docker compose up -d                                   # Postgres en localhost:5
 (cd apps/web && npm ci && npm run dev)                 # front en http://localhost:5173
 ```
 
-`DEV_USER` entra sin Google (solo fuera de producción).
+`DEV_USER` entra sin Google (solo fuera de producción). El login con Google se prueba en desarrollo.
 
 ## Cómo se despliega
 
