@@ -97,7 +97,7 @@ function EditorPlantilla({ inicial, cerrar }) {
               <strong>{DIAS[i]}</strong>
               <select value={d?.tipo || ''} onChange={(e) => cambiarTipo(i, e.target.value)} aria-label={`Tipo del ${DIAS[i]}`}>
                 <option value="">— No tocar</option>
-                {TIPOS.map((t) => <option key={t.id} value={t.id}>{t.icono} {t.nombre}</option>)}
+                {TIPOS.filter((t) => t.id !== 'compensado').map((t) => <option key={t.id} value={t.id}>{t.icono} {t.nombre}</option>)}
               </select>
             </div>
             {d?.tipo === 'trabajo' && <Tramos compacto tramos={d.tramos} cambiar={(tramos) => cambiarDia(i, { ...d, tramos })} />}

@@ -5,6 +5,7 @@ export const TIPOS = [
   { id: 'vacaciones', nombre: 'Vacaciones', color: '#c98a12', fondo: '#fcefd2', icono: '🌻' },
   { id: 'festivo', nombre: 'Festivo', color: '#7d6db7', fondo: '#ebe7f7', icono: '🎉' },
   { id: 'baja', nombre: 'Baja', color: '#c4566a', fondo: '#fbe4e8', icono: '🩹' },
+  { id: 'compensado', nombre: 'Libre compensado', color: '#2f8f8a', fondo: '#dff1ef', icono: '🔄' },
 ];
 
 export const tipo = (id) => TIPOS.find((t) => t.id === id);

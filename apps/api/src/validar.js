@@ -3,7 +3,7 @@
 
 class ErrorValidacion extends Error {}
 
-const TIPOS = ['trabajo', 'libre', 'vacaciones', 'festivo', 'baja'];
+const TIPOS = ['trabajo', 'libre', 'vacaciones', 'festivo', 'baja', 'compensado'];
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -46,16 +46,29 @@ function tramos(valor) {
   });
 }
 
-// Un día: { tipo, tramos (solo trabajo), nota? }.
+const minutosDelDia = (d) => (d.tipo === 'trabajo' ? d.tramos.reduce((s, t) => s + duracion(t), 0) : 0);
+
+const minutos = (valor, campo, min) => {
+  if (!Number.isInteger(valor) || valor < min || valor > 1440) throw new ErrorValidacion(`${campo}: entre ${min} y 1440 minutos`);
+  return valor;
+};
+
+// Un día: { tipo, tramos (solo trabajo), nota?, extra?, compensa? }.
+//   extra (solo trabajo): { minutos, pago: 'dinero' | 'horas', cobrada? }; no más que lo trabajado.
+//   compensa (solo 'compensado'): minutos que gasta de la bolsa de horas libres.
 function dia(body) {
   if (!TIPOS.includes(body?.tipo)) throw new ErrorValidacion(`tipo: elegí entre ${TIPOS.join(', ')}`);
   const nota = String(body?.nota ?? '').replace(/\s+/g, ' ').trim();
   if (nota.length > 200) throw new ErrorValidacion('nota: como mucho 200 caracteres');
-  return {
-    tipo: body.tipo,
-    tramos: body.tipo === 'trabajo' ? tramos(body.tramos) : [],
-    nota: nota || null,
-  };
+  const d = { tipo: body.tipo, tramos: body.tipo === 'trabajo' ? tramos(body.tramos) : [], nota: nota || null, extra: null, compensa: 0 };
+  if (d.tipo === 'trabajo' && body.extra) {
+    const m = minutos(body.extra.minutos, 'horas extra', 1);
+    if (m > minutosDelDia(d)) throw new ErrorValidacion('horas extra: no pueden ser más que las trabajadas ese día');
+    if (!['dinero', 'horas'].includes(body.extra.pago)) throw new ErrorValidacion('horas extra: elegí si se pagan o van a horas libres');
+    d.extra = { minutos: m, pago: body.extra.pago, cobrada: body.extra.pago === 'dinero' && body.extra.cobrada === true };
+  }
+  if (d.tipo === 'compensado') d.compensa = minutos(body.compensa, 'horas libres usadas', 15);
+  return d;
 }
 
 // Rango [desde, hasta] para leer el calendario: como mucho ~2 meses y medio.
@@ -73,6 +86,7 @@ function plantilla(body) {
   const nombre = String(body?.nombre ?? '').replace(/\s+/g, ' ').trim();
   if (nombre.length < 2 || nombre.length > 40) throw new ErrorValidacion('nombre: entre 2 y 40 caracteres');
   if (!Array.isArray(body?.dias) || body.dias.length !== 7) throw new ErrorValidacion('dias: uno por día de la semana (7)');
+  if (body.dias.some((d) => d?.tipo === 'compensado')) throw new ErrorValidacion('plantilla: el libre compensado se carga día a día');
   const dias = body.dias.map((d) => (d == null ? null : (({ tipo: t, tramos: tr }) => ({ tipo: t, tramos: tr }))(dia(d))));
   if (dias.every((d) => d === null)) throw new ErrorValidacion('dias: cargá al menos un día');
   return { nombre, dias };
@@ -98,6 +112,5 @@ function lote(body, hoy = new Date()) {
   };
 }
 
-const minutosDelDia = (d) => (d.tipo === 'trabajo' ? d.tramos.reduce((s, t) => s + duracion(t), 0) : 0);
 
 module.exports = { ErrorValidacion, TIPOS, fecha, fechaEditable, duracion, tramos, dia, rango, plantilla, lote, minutosDelDia };
