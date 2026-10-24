@@ -68,6 +68,36 @@ function rango(desde, hasta) {
   return [desde, hasta];
 }
 
+// Plantilla: 7 días (lunes a domingo); null = ese día no se toca al aplicarla.
+function plantilla(body) {
+  const nombre = String(body?.nombre ?? '').replace(/\s+/g, ' ').trim();
+  if (nombre.length < 2 || nombre.length > 40) throw new ErrorValidacion('nombre: entre 2 y 40 caracteres');
+  if (!Array.isArray(body?.dias) || body.dias.length !== 7) throw new ErrorValidacion('dias: uno por día de la semana (7)');
+  const dias = body.dias.map((d) => (d == null ? null : (({ tipo: t, tramos: tr }) => ({ tipo: t, tramos: tr }))(dia(d))));
+  if (dias.every((d) => d === null)) throw new ErrorValidacion('dias: cargá al menos un día');
+  return { nombre, dias };
+}
+
+// Cambios en bloque (varios días seleccionados, o una plantilla aplicada):
+// { dias: [{ fecha, tipo, tramos, nota }], borrar: [fecha] }, como mucho 93.
+function lote(body, hoy = new Date()) {
+  const dias = Array.isArray(body?.dias) ? body.dias : [];
+  const borrar = Array.isArray(body?.borrar) ? body.borrar : [];
+  if (!dias.length && !borrar.length) throw new ErrorValidacion('nada que cambiar');
+  if (dias.length + borrar.length > 93) throw new ErrorValidacion('como mucho 93 días por vez');
+  const vistos = new Set();
+  const una = (f) => {
+    fechaEditable(f, hoy);
+    if (vistos.has(f)) throw new ErrorValidacion(`fecha repetida: ${f}`);
+    vistos.add(f);
+    return f;
+  };
+  return {
+    dias: dias.map((d) => ({ fecha: una(d?.fecha), ...dia(d) })),
+    borrar: borrar.map(una),
+  };
+}
+
 const minutosDelDia = (d) => (d.tipo === 'trabajo' ? d.tramos.reduce((s, t) => s + duracion(t), 0) : 0);
 
-module.exports = { ErrorValidacion, TIPOS, fecha, fechaEditable, duracion, tramos, dia, rango, minutosDelDia };
+module.exports = { ErrorValidacion, TIPOS, fecha, fechaEditable, duracion, tramos, dia, rango, plantilla, lote, minutosDelDia };
