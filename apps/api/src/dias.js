@@ -1,8 +1,8 @@
 // Días del calendario de cada usuario: leer un rango, guardar un día y borrarlo.
 const express = require('express');
 const pool = require('./db');
-const { requiereSesion } = require('./auth');
-const { ErrorValidacion, fecha, dia, rango } = require('./validar');
+const { protegerApp } = require('./cuentas');
+const { ErrorValidacion, fecha, fechaEditable, dia, rango } = require('./validar');
 
 function manejar(fn) {
   return async (req, res, next) => {
@@ -16,7 +16,8 @@ function manejar(fn) {
 }
 
 const router = express.Router();
-router.use('/dias', requiereSesion);
+// Cuenta activa, límites de escritura y suspensión automática (src/cuentas.js).
+router.use('/dias', protegerApp);
 
 // GET /dias?desde=2026-10-26&hasta=2026-12-06 (lo que muestra la cuadrícula del mes)
 router.get('/dias', manejar(async (req, res) => {
@@ -30,7 +31,7 @@ router.get('/dias', manejar(async (req, res) => {
 }));
 
 router.put('/dias/:fecha', manejar(async (req, res) => {
-  const f = fecha(req.params.fecha);
+  const f = fechaEditable(req.params.fecha);
   const d = dia(req.body);
   const { rows } = await pool.query(
     `INSERT INTO dias (usuario_id, fecha, tipo, tramos, nota) VALUES ($1, $2, $3, $4, $5)

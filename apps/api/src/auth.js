@@ -1,4 +1,4 @@
-// Login del organizador con Google (OAuth 2.0, flujo de código en el servidor).
+// Login con Google (OAuth 2.0, flujo de código en el servidor).
 // El front solo redirige a /auth/login; el secreto del cliente nunca sale de la API.
 // Sesión: token al azar en una cookie httpOnly; en la base, solo su hash.
 const crypto = require('crypto');
@@ -28,14 +28,22 @@ async function abrirSesion(res, usuarioId) {
   res.cookie(COOKIE_SESION, token, opcionesCookie(DURACION_SESION_MS));
 }
 
-async function guardarUsuario({ sub, email, nombre }) {
-  const { rows } = await pool.query(
+// Cuenta existente: se actualiza el email (puede cambiar en Google), no el nombre
+// (lo elige el usuario en el alta). Nueva: se crea "pendiente", si quedan altas.
+async function entrar({ sub, email, nombre }) {
+  const { rows } = await pool.query('UPDATE usuarios SET email = $2 WHERE google_sub = $1 RETURNING id', [sub, email]);
+  if (rows.length) return rows[0].id;
+  await require('./cuentas').comprobarAltas();
+  const { rows: nuevos } = await pool.query(
     `INSERT INTO usuarios (google_sub, email, nombre) VALUES ($1, $2, $3)
-     ON CONFLICT (google_sub) DO UPDATE SET email = EXCLUDED.email, nombre = EXCLUDED.nombre
-     RETURNING id`,
+     ON CONFLICT (google_sub) DO UPDATE SET email = EXCLUDED.email RETURNING id`,
     [sub, email, nombre]
   );
-  return rows[0].id;
+  return nuevos[0].id;
+}
+
+function cerrarSesion(res) {
+  res.clearCookie(COOKIE_SESION, { path: '/' });
 }
 
 // Middleware: req.usuario si hay sesión válida (o null). requiereSesion corta con 401.
@@ -45,7 +53,7 @@ async function leerSesion(req, res, next) {
   if (token && /^[0-9a-f]{64}$/.test(token)) {
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.email, u.nombre FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
+        `SELECT u.id, u.email, u.nombre, u.estado FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
          WHERE s.token_hash = $1 AND s.vence_en > now()`,
         [hash(token)]
       );
@@ -68,7 +76,7 @@ router.get('/login', async (req, res, next) => {
   try {
     // Desarrollo local sin cliente OAuth: entra directamente como DEV_USER.
     if (config.devUser && !config.googleClientId) {
-      const id = await guardarUsuario({ sub: `dev:${config.devUser}`, email: config.devUser, nombre: config.devUser.split('@')[0] });
+      const id = await entrar({ sub: `dev:${config.devUser}`, email: config.devUser, nombre: config.devUser.split('@')[0] });
       await abrirSesion(res, id);
       return res.redirect(config.frontUrl);
     }
@@ -85,6 +93,7 @@ router.get('/login', async (req, res, next) => {
     });
     res.redirect(url.toString());
   } catch (err) {
+    if (err instanceof require('./cuentas').AltasCerradas) return res.redirect(`${config.frontUrl}/?error=altas`);
     next(err);
   }
 });
@@ -123,28 +132,29 @@ router.get('/callback', async (req, res, next) => {
     const perfil = respPerfil.ok ? await respPerfil.json() : null;
     if (!perfil?.sub || !perfil.email || perfil.email_verified !== true) return volverConError();
 
-    const id = await guardarUsuario({ sub: perfil.sub, email: perfil.email, nombre: perfil.name || perfil.email.split('@')[0] });
+    const id = await entrar({ sub: perfil.sub, email: perfil.email, nombre: perfil.name || perfil.email.split('@')[0] });
     await abrirSesion(res, id);
     res.redirect(config.frontUrl);
   } catch (err) {
+    if (err instanceof require('./cuentas').AltasCerradas) return res.redirect(`${config.frontUrl}/?error=altas`);
     next(err);
   }
 });
 
 router.get('/yo', (req, res) => {
   if (!req.usuario) return res.status(401).json({ error: 'Sin sesión' });
-  res.json({ nombre: req.usuario.nombre, email: req.usuario.email });
+  res.json({ nombre: req.usuario.nombre, email: req.usuario.email, estado: req.usuario.estado });
 });
 
 router.post('/salir', async (req, res, next) => {
   try {
     const token = req.cookies?.[COOKIE_SESION];
     if (token) await pool.query('DELETE FROM sesiones WHERE token_hash = $1', [hash(token)]);
-    res.clearCookie(COOKIE_SESION, { path: '/' });
+    cerrarSesion(res);
     res.json({ ok: true });
   } catch (err) {
     next(err);
   }
 });
 
-module.exports = { router, leerSesion, requiereSesion };
+module.exports = { router, leerSesion, requiereSesion, cerrarSesion };

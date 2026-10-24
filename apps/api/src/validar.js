@@ -15,6 +15,17 @@ function fecha(valor, campo = 'fecha') {
   return valor;
 }
 
+// Cuota: se carga desde 3 años atrás hasta 2 años adelante. Acota lo que una
+// cuenta puede guardar (y con miles de cuentas, lo que ocupa la base).
+function fechaEditable(valor, hoy = new Date()) {
+  const f = fecha(valor);
+  const y = hoy.getUTCFullYear();
+  const min = `${y - 3}${hoy.toISOString().slice(4, 10)}`;
+  const max = `${y + 2}${hoy.toISOString().slice(4, 10)}`;
+  if (f < min || f > max) throw new ErrorValidacion('fecha: se puede cargar desde 3 años atrás hasta 2 años adelante');
+  return f;
+}
+
 const aMinutos = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
 
 // Duración de un tramo en minutos; fin < inicio = pasa de medianoche.
@@ -59,4 +70,4 @@ function rango(desde, hasta) {
 
 const minutosDelDia = (d) => (d.tipo === 'trabajo' ? d.tramos.reduce((s, t) => s + duracion(t), 0) : 0);
 
-module.exports = { ErrorValidacion, TIPOS, fecha, duracion, tramos, dia, rango, minutosDelDia };
+module.exports = { ErrorValidacion, TIPOS, fecha, fechaEditable, duracion, tramos, dia, rango, minutosDelDia };
