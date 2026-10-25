@@ -8,6 +8,7 @@ const auth = require('./auth');
 const dias = require('./dias');
 const cuentas = require('./cuentas');
 const plantillas = require('./plantillas');
+const notas = require('./notas');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/auth', auth.router);
 app.use(cuentas.router);
 app.use(dias);
 app.use(plantillas);
+app.use(notas);
 
 app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 

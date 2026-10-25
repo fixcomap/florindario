@@ -1,0 +1,50 @@
+import { useState } from 'react';
+import { pedir } from '../api.js';
+import { fechasTexto } from '../notas.js';
+
+const JSON_ = { 'Content-Type': 'application/json' };
+
+// Crear una nota (para fechas o general del mes) o editar un post-it (todas sus notas).
+export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
+  const [texto, setTexto] = useState(grupo?.texto || '');
+  const [error, setError] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const destino = grupo ? (grupo.fechas.length ? fechasTexto(grupo.fechas) : 'General del mes')
+    : fechas?.length ? fechasTexto(fechas) : 'General del mes';
+
+  async function hacer(fn) {
+    setError('');
+    setEnviando(true);
+    try {
+      await fn();
+      cambiado();
+      cerrar();
+    } catch (err) {
+      setError(err.message);
+      setEnviando(false);
+    }
+  }
+
+  const guardar = () => hacer(async () => {
+    if (grupo) await Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: JSON_, body: JSON.stringify({ texto }) })));
+    else await pedir('/notas', { method: 'POST', headers: JSON_, body: JSON.stringify(fechas?.length ? { texto, fechas } : { texto, mes }) });
+  });
+  const borrar = () => window.confirm('¿Borrar esta nota de todos sus días?')
+    && hacer(() => Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'DELETE' }))));
+
+  return (
+    <div className="fondo-hoja" onClick={cerrar}>
+      <section className="hoja" role="dialog" aria-label={grupo ? 'Editar nota' : 'Nueva nota'} onClick={(e) => e.stopPropagation()}>
+        <h2>{grupo ? 'Nota' : 'Nueva nota'}</h2>
+        <p className="tenue">📌 {destino}</p>
+        <textarea className="texto-nota" value={texto} maxLength={500} rows={4} autoFocus placeholder="Escribí tu nota…" onChange={(e) => setTexto(e.target.value)} />
+        {error && <p className="error">{error}</p>}
+        <div className="acciones">
+          <button className="boton" disabled={enviando || !texto.trim()} onClick={guardar}>Guardar</button>
+          {grupo && <button className="boton secundario peligro" disabled={enviando} onClick={borrar}>Borrar nota</button>}
+          <button className="enlace" onClick={cerrar}>Cancelar</button>
+        </div>
+      </section>
+    </div>
+  );
+}
