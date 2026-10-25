@@ -89,7 +89,19 @@ router.post('/cuenta/alta', requiereSesion, async (req, res, next) => {
       "UPDATE usuarios SET estado = 'activa', nombre = $2, terminos_aceptados_en = now() WHERE id = $1",
       [req.usuario.id, nombre]
     );
-    res.json({ nombre, email: req.usuario.email, estado: 'activa' });
+    res.json({ nombre, email: req.usuario.email, estado: 'activa', bolsa: req.usuario.bolsa });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Ajustes: cómo le devuelven las horas extra.
+router.put('/cuenta/ajustes', requiereActiva, async (req, res, next) => {
+  try {
+    const bolsa = req.body?.bolsa;
+    if (!['horas', 'jornadas', 'ninguna'].includes(bolsa)) return res.status(400).json({ error: 'bolsa: horas, jornadas o ninguna' });
+    await pool.query('UPDATE usuarios SET bolsa = $2 WHERE id = $1', [req.usuario.id, bolsa]);
+    res.json({ bolsa });
   } catch (err) {
     next(err);
   }

@@ -7,6 +7,10 @@ const pool = require('./db');
 const auth = require('./auth');
 const dias = require('./dias');
 const cuentas = require('./cuentas');
+const plantillas = require('./plantillas');
+const notas = require('./notas');
+const jornadas = require('./jornadas');
+const sueldo = require('./sueldo');
 
 const app = express();
 
@@ -34,11 +38,16 @@ app.get('/salud', async (req, res) => {
 app.use('/auth', auth.router);
 app.use(cuentas.router);
 app.use(dias);
+app.use(plantillas);
+app.use(notas);
+app.use(jornadas);
+app.use(sueldo);
 
 app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 
 // Nunca el detalle al cliente: va al log de Cloud Run.
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
   console.error(err);
   if (res.headersSent) return next(err);
   res.status(500).json({ error: 'Algo salió mal. Probá de nuevo en un rato.' });

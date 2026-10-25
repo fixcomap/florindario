@@ -19,3 +19,10 @@ export function horas(minutos) {
 // "09:00" -> "9"; "09:30" -> "9:30" (corto, para la cuadrícula del mes)
 export const corta = (hhmm) => (hhmm.endsWith(':00') ? String(Number(hhmm.slice(0, 2))) : `${Number(hhmm.slice(0, 2))}:${hhmm.slice(3)}`);
 export const tramoCorto = (t) => `${corta(t.inicio)}–${corta(t.fin)}`;
+
+// Para la cuadrícula: 480 -> "8h"; 210 -> "3:30h".
+export const horasCortas = (minutos) => {
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return m ? `${h}:${String(m).padStart(2, '0')}h` : `${h}h`;
+};

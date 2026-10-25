@@ -53,7 +53,7 @@ async function leerSesion(req, res, next) {
   if (token && /^[0-9a-f]{64}$/.test(token)) {
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.email, u.nombre, u.estado FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
+        `SELECT u.id, u.email, u.nombre, u.estado, u.bolsa FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
          WHERE s.token_hash = $1 AND s.vence_en > now()`,
         [hash(token)]
       );
@@ -143,7 +143,7 @@ router.get('/callback', async (req, res, next) => {
 
 router.get('/yo', (req, res) => {
   if (!req.usuario) return res.status(401).json({ error: 'Sin sesión' });
-  res.json({ nombre: req.usuario.nombre, email: req.usuario.email, estado: req.usuario.estado });
+  res.json({ nombre: req.usuario.nombre, email: req.usuario.email, estado: req.usuario.estado, bolsa: req.usuario.bolsa });
 });
 
 router.post('/salir', async (req, res, next) => {
