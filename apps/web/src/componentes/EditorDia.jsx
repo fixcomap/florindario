@@ -25,7 +25,7 @@ function turnosDePlantillas(plantillas, fecha) {
 
 // Hoja inferior para cargar uno o varios días con lo mismo: tipo, tramos, horas
 // extra (pagadas o a la bolsa de horas libres), horas de bolsa usadas y nota.
-export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar, guardado }) {
+export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar, guardado, notas, notasCambiadas }) {
   const turnos = turnosDePlantillas(plantillas, fechas[0]);
   // Elección: 'p:<id>' (turno de plantilla), 'otro' (horario a mano) o un tipo sin horario.
   const [eleccion, setEleccion] = useState(() => {
@@ -37,7 +37,6 @@ export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar,
   const tipoDia = turno || eleccion === 'otro' ? 'trabajo' : eleccion;
   const [propios, setPropios] = useState(dia?.tipo === 'trabajo' ? dia.tramos : [TRAMO]);
   const tramos = turno ? turno.tramos : propios;
-  const [nota, setNota] = useState(dia?.nota || '');
   const [extra, setExtra] = useState(dia?.extra || null);
   const [compensa, setCompensa] = useState(dia?.compensa || 480);
   const trabajadas = minutosDelDia({ tipo: 'trabajo', tramos });
@@ -66,7 +65,6 @@ export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar,
       fecha,
       tipo: tipoDia,
       tramos: tipoDia === 'trabajo' ? tramos : [],
-      nota,
       extra: tipoDia === 'trabajo' && extra ? { ...extra, minutos: Math.min(extra.minutos, trabajadas) } : null,
       compensa: tipoDia === 'compensado' ? compensa : 0,
     })),
@@ -132,7 +130,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar,
             {bolsa && <p className="tenue">En tu bolsa: <strong>{horas(bolsa.saldo + (dia?.compensa || 0))}</strong></p>}
           </div>
         )}
-        <label>Nota<input value={nota} maxLength={200} placeholder="Opcional: cambio de turno, cubro a alguien…" onChange={(e) => setNota(e.target.value)} /></label>
+        {notas && <NotasDelDia fecha={fechas[0]} notas={notas} cambiadas={notasCambiadas} />}
         {error && <p className="error">{error}</p>}
         <div className="acciones">
           <button className="boton" disabled={enviando} onClick={guardar}>Guardar</button>
@@ -140,6 +138,34 @@ export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar,
           <button className="enlace" onClick={cerrar}>Cancelar</button>
         </div>
       </section>
+    </div>
+  );
+}
+
+// Notas de un día: se guardan al momento (no dependen de "Guardar" el horario).
+function NotasDelDia({ fecha, notas, cambiadas }) {
+  const [texto, setTexto] = useState('');
+  const [error, setError] = useState('');
+  const hacer = (fn) => fn().then(cambiadas).catch((err) => setError(err.message));
+  const agregar = () => texto.trim() && hacer(async () => {
+    await pedir('/notas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto, fechas: [fecha] }) });
+    setTexto('');
+  });
+  return (
+    <div className="notas-dia">
+      <span className="tenue">Notas</span>
+      {notas.map((n) => (
+        <div key={n.id} className="nota-dia">
+          <span>{n.texto}{n.fechas.length > 1 && <small className="tenue"> · en {n.fechas.length} días</small>}</span>
+          <button type="button" className="quitar" aria-label="Quitar la nota de este día" onClick={() => hacer(() => pedir(`/notas/${n.id}/fechas/${fecha}`, { method: 'DELETE' }))}>×</button>
+        </div>
+      ))}
+      <div className="nueva-nota">
+        <input value={texto} maxLength={500} placeholder="Añadir nota: cambio de turno, cubro a alguien…" onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && agregar()} />
+        <button type="button" className="chip" disabled={!texto.trim()} onClick={agregar}>Añadir</button>
+      </div>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

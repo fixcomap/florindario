@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { pedir } from '../api.js';
 import { DIAS_CORTOS, desdeIso, hoy, nombreMes, semanasDelMes } from '../fechas.js';
-import { horas, minutosDelDia, tramoCorto } from '../horas.js';
+import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
+import { agrupar } from '../notas.js';
+import Tablero from '../componentes/Tablero.jsx';
+import HojaNota from '../componentes/HojaNota.jsx';
 import { TIPOS, tipo } from '../datos/tipos.js';
 import EditorDia from '../componentes/EditorDia.jsx';
 import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
@@ -19,6 +22,7 @@ export default function Calendario() {
   const [hoja, setHoja] = useState(null); // { tipo: 'editar' | 'plantilla', fechas }
   const [error, setError] = useState('');
   const [extras, setExtras] = useState(null);
+  const [notas, setNotas] = useState([]);
   const cargarExtras = () => pedir('/extras').then(setExtras).catch(() => {});
   useEffect(() => { cargarExtras(); }, []);
 
@@ -32,10 +36,21 @@ export default function Calendario() {
       .catch((err) => setError(err.message));
   }, [desde, hasta]);
   useEffect(cargar, [cargar]);
+  const claveMes = `${mes.anio}-${String(mes.mes + 1).padStart(2, '0')}`;
+  const cargarNotas = useCallback(() => {
+    pedir(`/notas?desde=${desde}&hasta=${hasta}&mes=${claveMes}`).then(setNotas).catch((err) => setError(err.message));
+  }, [desde, hasta, claveMes]);
+  useEffect(cargarNotas, [cargarNotas]);
+  const notasPorFecha = useMemo(() => {
+    const m = {};
+    notas.forEach((n) => n.fechas.forEach((f) => { (m[f] ||= []).push(n); }));
+    return m;
+  }, [notas]);
   useEffect(() => { pedir('/plantillas').then(setPlantillas).catch(() => {}); }, []);
 
   const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
+  const gruposMes = agrupar(notas.filter((n) => !n.fechas.length || n.fechas.some(delMes)));
   const delMesCargados = Object.values(dias).filter((d) => delMes(d.fecha));
   const totalMes = delMesCargados.reduce((s, d) => s + minutosDelDia(d), 0);
   const suma = (filtro) => delMesCargados.filter((d) => d.extra && filtro(d.extra)).reduce((s, d) => s + d.extra.minutos, 0);
@@ -95,7 +110,7 @@ export default function Calendario() {
         {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
         <div className="cabeza">h</div>
         {semanas.map((semana) => (
-          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar}
+          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar} notasPorFecha={notasPorFecha}
             elegidos={elegidos} eligiendo={eligiendo} elegirSemana={() => alternar(semana)} />
         ))}
       </div>
@@ -119,6 +134,8 @@ export default function Calendario() {
           )}
         </section>
       ) : null}
+      <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
+
       <ul className="leyenda">
         {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}
       </ul>
@@ -134,13 +151,18 @@ export default function Calendario() {
           <span><strong>{elegidos.size}</strong> {elegidos.size === 1 ? 'día' : 'días'}</span>
           <button className="boton" disabled={!elegidos.size} onClick={() => setHoja({ tipo: 'plantilla', fechas: ordenados })}>Plantilla</button>
           <button className="boton secundario" disabled={!elegidos.size} onClick={() => setHoja({ tipo: 'editar', fechas: ordenados })}>Horario</button>
-          <button className="enlace" onClick={terminar}>Cancelar</button>
+          <button className="boton secundario" disabled={!elegidos.size} onClick={() => setHoja({ tipo: 'nota', fechas: ordenados })}>Nota</button>
+          <button className="cerrar-barra" aria-label="Cancelar" onClick={terminar}>×</button>
         </div>
       )}
 
       {hoja?.tipo === 'editar' && (
         <EditorDia fechas={hoja.fechas} dia={hoja.fechas.length === 1 ? dias[hoja.fechas[0]] : undefined}
-          plantillas={plantillas} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado} />
+          plantillas={plantillas} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado}
+          notas={hoja.fechas.length === 1 ? notasPorFecha[hoja.fechas[0]] || [] : null} notasCambiadas={cargarNotas} />
+      )}
+      {hoja?.tipo === 'nota' && (
+        <HojaNota fechas={hoja.fechas} cerrar={() => setHoja(null)} cambiado={() => { cargarNotas(); terminar(); }} />
       )}
       {hoja?.tipo === 'plantilla' && (
         <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} cerrar={() => setHoja(null)} guardado={guardado} />
@@ -149,7 +171,7 @@ export default function Calendario() {
   );
 }
 
-function Semana({ semana, dias, delMes, tocar, elegidos, eligiendo, elegirSemana }) {
+function Semana({ semana, dias, delMes, tocar, notasPorFecha, elegidos, eligiendo, elegirSemana }) {
   const total = semana.reduce((s, f) => s + minutosDelDia(dias[f]), 0);
   return (
     <>
@@ -167,16 +189,16 @@ function Semana({ semana, dias, delMes, tocar, elegidos, eligiendo, elegirSemana
             aria-pressed={eligiendo ? elegido : undefined}
             aria-label={`${f}${t ? `, ${t.nombre}` : ', sin cargar'}`}
           >
-            <span className="numero">{desdeIso(f).getDate()}</span>
+            <span className="numero">{desdeIso(f).getDate()}{notasPorFecha[f] && <span className="marca-nota" title={notasPorFecha[f].map((n) => n.texto).join(' · ')} />}</span>
             {t && (
               <span className="contenido" style={{ color: t.color }}>
                 {d.tipo === 'trabajo' ? d.tramos.map((tr) => <span key={tr.inicio}>{tramoCorto(tr)}</span>) : <span>{t.icono}</span>}
               </span>
             )}
-            {minutosDelDia(d) > 0 && <span className="horas-dia">{horas(minutosDelDia(d)).replace(' h ', ':').replace(' h', 'h')}</span>}
+            {minutosDelDia(d) > 0 && <span className="horas-dia">{horasCortas(minutosDelDia(d))}</span>}
             {d?.extra && (
               <span className={`marca-extra ${d.extra.pago}${d.extra.pago === 'dinero' && !d.extra.cobrada ? ' pendiente' : ''}`}>
-                +{horas(d.extra.minutos).replace(' h ', ':').replace(' h', 'h')}
+                +{horasCortas(d.extra.minutos)}
               </span>
             )}
           </button>
