@@ -45,6 +45,7 @@ app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 
 // Nunca el detalle al cliente: va al log de Cloud Run.
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
   console.error(err);
   if (res.headersSent) return next(err);
   res.status(500).json({ error: 'Algo salió mal. Probá de nuevo en un rato.' });

@@ -3,7 +3,7 @@ import { pedir } from '../api.js';
 import { DIAS_CORTOS, desdeIso, hoy, nombreMes, semanasDelMes } from '../fechas.js';
 import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
 import { agrupar } from '../notas.js';
-import { enJornadas } from '../jornadas.js';
+import { saldoEnDias, sumaEnDias } from '../jornadas.js';
 import Tablero from '../componentes/Tablero.jsx';
 import HojaNota from '../componentes/HojaNota.jsx';
 import { TIPOS, tipo } from '../datos/tipos.js';
@@ -116,7 +116,7 @@ export default function Calendario({ usuario }) {
         {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
         <div className="cabeza">h</div>
         {semanas.map((semana) => (
-          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar} notasPorFecha={notasPorFecha}
+          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar} notasPorFecha={notasPorFecha} modoBolsa={modoBolsa} jornadas={jornadas}
             elegidos={elegidos} eligiendo={eligiendo} elegirSemana={() => alternar(semana)} />
         ))}
       </div>
@@ -132,10 +132,15 @@ export default function Calendario({ usuario }) {
             </p>
           )}
           {modoBolsa !== 'ninguna' && (extraMes.bolsa > 0 || usadasMes > 0) && (
-            <p>🕒 A libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · devueltas {horas(usadasMes)}</>}</p>
+            modoBolsa === 'jornadas' && jornadas.length ? (
+              <p>🕒 Días a devolver este mes: <strong>{sumaEnDias(delMesCargados.filter((d) => d.extra?.pago === 'horas').map((d) => d.extra), jornadas) || '—'}</strong>
+                {usadasMes > 0 && <> · devueltos {sumaEnDias(delMesCargados.filter((d) => d.compensa).map((d) => ({ minutos: d.compensa, jornadaId: d.compensaJornadaId })), jornadas)}</>}</p>
+            ) : (
+              <p>🕒 A libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · devueltas {horas(usadasMes)}</>}</p>
+            )
           )}
           {modoBolsa !== 'ninguna' && extras && (extras.bolsa.generadas > 0 || extras.bolsa.usadas > 0) && (
-            <p className="tenue">{modoBolsa === 'jornadas' ? 'Te deben' : 'Bolsa de horas libres'}: <strong className={extras.bolsa.saldo < 0 ? 'aviso' : ''}>{extras.bolsa.saldo < 0 ? '−' : ''}{modoBolsa === 'jornadas' ? enJornadas(Math.abs(extras.bolsa.saldo), jornadas) : horas(Math.abs(extras.bolsa.saldo))}</strong></p>
+            <p className="tenue">{modoBolsa === 'jornadas' ? 'Te deben' : 'Bolsa de horas libres'}: <strong className={extras.bolsa.saldo < 0 ? 'aviso' : ''}>{extras.bolsa.saldo < 0 ? '−' : ''}{modoBolsa === 'jornadas' ? saldoEnDias(Math.abs(extras.bolsa.saldo), extras.porJornada, jornadas) : horas(Math.abs(extras.bolsa.saldo))}</strong></p>
           )}
           {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
@@ -164,7 +169,7 @@ export default function Calendario({ usuario }) {
 
       {hoja?.tipo === 'editar' && (
         <EditorDia fechas={hoja.fechas} dia={hoja.fechas.length === 1 ? dias[hoja.fechas[0]] : undefined}
-          plantillas={plantillas} jornadas={jornadas} modoBolsa={modoBolsa} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado}
+          plantillas={plantillas} jornadas={jornadas} modoBolsa={modoBolsa} bolsa={extras && { ...extras.bolsa, porJornada: extras.porJornada }} cerrar={() => setHoja(null)} guardado={guardado}
           notas={hoja.fechas.length === 1 ? notasPorFecha[hoja.fechas[0]] || [] : null} notasCambiadas={cargarNotas} />
       )}
       {hoja?.tipo === 'nota' && (
@@ -177,7 +182,7 @@ export default function Calendario({ usuario }) {
   );
 }
 
-function Semana({ semana, dias, delMes, tocar, notasPorFecha, elegidos, eligiendo, elegirSemana }) {
+function Semana({ semana, dias, delMes, tocar, notasPorFecha, modoBolsa, jornadas, elegidos, eligiendo, elegirSemana }) {
   const total = semana.reduce((s, f) => s + minutosDelDia(dias[f]), 0);
   return (
     <>
@@ -204,7 +209,9 @@ function Semana({ semana, dias, delMes, tocar, notasPorFecha, elegidos, eligiend
             {minutosDelDia(d) > 0 && <span className="horas-dia">{horasCortas(minutosDelDia(d))}</span>}
             {d?.extra && (
               <span className={`marca-extra ${d.extra.pago}${d.extra.pago === 'dinero' && !d.extra.cobrada ? ' pendiente' : ''}`}>
-                +{horasCortas(d.extra.minutos)}
+                +{modoBolsa === 'jornadas' && d.extra.pago === 'horas' && jornadas.find((j) => j.id === d.extra.jornadaId)
+                  ? `${String(Math.round((d.extra.minutos / jornadas.find((j) => j.id === d.extra.jornadaId).minutosDia) * 10) / 10).replace('.', ',')}d`
+                  : horasCortas(d.extra.minutos)}
               </span>
             )}
           </button>

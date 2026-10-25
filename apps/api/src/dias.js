@@ -4,7 +4,8 @@ const pool = require('./db');
 const { protegerApp } = require('./cuentas');
 const { ErrorValidacion, fecha, fechaEditable, dia, rango, lote } = require('./validar');
 
-const COLUMNAS = `to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos`;
+const COLUMNAS = `to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos,
+  extra_jornada_id::text, compensa_jornada_id::text`;
 
 // Fila de la base -> día del front.
 const aDia = (f) => ({
@@ -12,18 +13,29 @@ const aDia = (f) => ({
   tipo: f.tipo,
   tramos: f.tramos,
   nota: f.nota,
-  extra: f.extra_minutos ? { minutos: f.extra_minutos, pago: f.extra_pago, cobrada: f.extra_cobrada } : null,
+  extra: f.extra_minutos ? { minutos: f.extra_minutos, pago: f.extra_pago, cobrada: f.extra_cobrada, jornadaId: f.extra_jornada_id } : null,
   compensa: f.compensa_minutos,
+  compensaJornadaId: f.compensa_jornada_id,
 });
 
-const GUARDAR = `INSERT INTO dias (usuario_id, fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+const GUARDAR = `INSERT INTO dias (usuario_id, fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos,
+    extra_jornada_id, compensa_jornada_id)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
   ON CONFLICT (usuario_id, fecha) DO UPDATE SET tipo = EXCLUDED.tipo, tramos = EXCLUDED.tramos, nota = EXCLUDED.nota,
     extra_minutos = EXCLUDED.extra_minutos, extra_pago = EXCLUDED.extra_pago, extra_cobrada = EXCLUDED.extra_cobrada,
-    compensa_minutos = EXCLUDED.compensa_minutos
+    compensa_minutos = EXCLUDED.compensa_minutos, extra_jornada_id = EXCLUDED.extra_jornada_id,
+    compensa_jornada_id = EXCLUDED.compensa_jornada_id
   RETURNING ${COLUMNAS}`;
 const valores = (usuarioId, f, d) => [usuarioId, f, d.tipo, JSON.stringify(d.tramos), d.nota,
-  d.extra?.minutos ?? 0, d.extra?.pago ?? null, d.extra?.cobrada ?? false, d.compensa];
+  d.extra?.minutos ?? 0, d.extra?.pago ?? null, d.extra?.cobrada ?? false, d.compensa, d.extra?.jornadaId ?? null, d.compensaJornadaId];
+
+// Las jornadas que se nombran tienen que ser del usuario.
+async function comprobarJornadas(usuarioId, dias) {
+  const ids = [...new Set(dias.flatMap((d) => [d.extra?.jornadaId, d.compensaJornadaId]).filter(Boolean))];
+  if (!ids.length) return;
+  const { rows: [{ n }] } = await pool.query('SELECT count(*)::int AS n FROM jornadas WHERE usuario_id = $1 AND id = ANY($2::bigint[])', [usuarioId, ids]);
+  if (n !== ids.length) throw new ErrorValidacion('jornada: no existe');
+}
 
 function manejar(fn) {
   return async (req, res, next) => {
@@ -53,6 +65,7 @@ router.get('/dias', manejar(async (req, res) => {
 router.put('/dias/:fecha', manejar(async (req, res) => {
   const f = fechaEditable(req.params.fecha);
   const d = dia(req.body);
+  await comprobarJornadas(req.usuario.id, [d]);
   const { rows } = await pool.query(GUARDAR, valores(req.usuario.id, f, d));
   res.json(aDia(rows[0]));
 }));
@@ -60,6 +73,7 @@ router.put('/dias/:fecha', manejar(async (req, res) => {
 // Varios días de una vez (selección múltiple o plantilla aplicada), en una transacción.
 router.put('/dias', manejar(async (req, res) => {
   const { dias, borrar } = lote(req.body);
+  await comprobarJornadas(req.usuario.id, dias);
   const cliente = await pool.connect();
   try {
     await cliente.query('BEGIN');
@@ -91,7 +105,17 @@ router.get('/extras', manejar(async (req, res) => {
      FROM dias WHERE usuario_id = $1`,
     [req.usuario.id]
   );
+  // Por jornada: minutos a libres y devueltos (para contarlos en días de cada jornada).
+  const { rows: porJornada } = await pool.query(
+    `SELECT jornada_id::text AS "jornadaId", sum(generadas)::int AS generadas, sum(usadas)::int AS usadas FROM (
+       SELECT extra_jornada_id AS jornada_id, extra_minutos AS generadas, 0 AS usadas FROM dias WHERE usuario_id = $1 AND extra_pago = 'horas'
+       UNION ALL
+       SELECT compensa_jornada_id, 0, compensa_minutos FROM dias WHERE usuario_id = $1 AND tipo = 'compensado'
+     ) x GROUP BY jornada_id`,
+    [req.usuario.id]
+  );
   res.json({
+    porJornada,
     dinero: { sinCobrar: r.sin_cobrar, cobradas: r.cobradas },
     bolsa: { generadas: r.bolsa_generadas, usadas: r.bolsa_usadas, saldo: r.bolsa_generadas - r.bolsa_usadas },
   });
