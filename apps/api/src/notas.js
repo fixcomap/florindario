@@ -1,4 +1,5 @@
-// Notas del usuario: con fechas (una o varias) o generales de un mes.
+// Notas del usuario: con fechas (una o varias) o generales de un mes; las
+// fijadas se ven en todos los meses.
 // Cuota: 1000 notas por cuenta; 93 fechas por nota.
 const express = require('express');
 const pool = require('./db');
@@ -32,7 +33,7 @@ const id = (valor) => {
   return valor;
 };
 
-const SELECT = `SELECT n.id::text, n.texto, to_char(n.mes, 'YYYY-MM') AS mes,
+const SELECT = `SELECT n.id::text, n.texto, n.fijada, to_char(n.mes, 'YYYY-MM') AS mes,
     coalesce(array_agg(to_char(f.fecha, 'YYYY-MM-DD') ORDER BY f.fecha) FILTER (WHERE f.fecha IS NOT NULL), '{}') AS fechas
   FROM notas n LEFT JOIN notas_fechas f ON f.nota_id = n.id`;
 
@@ -44,14 +45,14 @@ async function una(usuarioId, notaId) {
 const router = express.Router();
 router.use('/notas', protegerApp);
 
-// GET /notas?desde&hasta&mes=AAAA-MM: las que tienen alguna fecha en el rango y las generales del mes.
+// GET /notas?desde&hasta&mes=AAAA-MM: las que tienen alguna fecha en el rango, las generales del mes y las fijadas.
 router.get('/notas', manejar(async (req, res) => {
   const [desde, hasta] = rango(req.query.desde, req.query.hasta);
   const m = mes(req.query.mes);
   const { rows } = await pool.query(
-    `${SELECT} WHERE n.usuario_id = $1 AND (n.mes = $4 OR EXISTS (
+    `${SELECT} WHERE n.usuario_id = $1 AND (n.fijada OR n.mes = $4 OR EXISTS (
        SELECT 1 FROM notas_fechas x WHERE x.nota_id = n.id AND x.fecha BETWEEN $2 AND $3))
-     GROUP BY n.id ORDER BY min(f.fecha) NULLS LAST, n.creada_en`,
+     GROUP BY n.id ORDER BY n.fijada DESC, min(f.fecha) NULLS LAST, n.creada_en`,
     [req.usuario.id, desde, hasta, m]
   );
   res.json(rows);
@@ -69,7 +70,8 @@ router.post('/notas', manejar(async (req, res) => {
   const cliente = await pool.connect();
   try {
     await cliente.query('BEGIN');
-    const { rows: [nota] } = await cliente.query('INSERT INTO notas (usuario_id, texto, mes) VALUES ($1, $2, $3) RETURNING id', [req.usuario.id, t, m]);
+    const { rows: [nota] } = await cliente.query('INSERT INTO notas (usuario_id, texto, mes, fijada) VALUES ($1, $2, $3, $4) RETURNING id',
+      [req.usuario.id, t, m, req.body?.fijada === true]);
     if (fechas.length) await cliente.query('INSERT INTO notas_fechas (nota_id, fecha) SELECT $1, unnest($2::date[])', [nota.id, fechas]);
     await cliente.query('COMMIT');
     res.status(201).json(await una(req.usuario.id, nota.id));
@@ -81,8 +83,15 @@ router.post('/notas', manejar(async (req, res) => {
   }
 }));
 
+// { texto?, fijada? }
 router.put('/notas/:id', manejar(async (req, res) => {
-  const { rowCount } = await pool.query('UPDATE notas SET texto = $3 WHERE id = $2 AND usuario_id = $1', [req.usuario.id, id(req.params.id), texto(req.body?.texto)]);
+  const t = req.body?.texto === undefined ? null : texto(req.body.texto);
+  const fijada = typeof req.body?.fijada === 'boolean' ? req.body.fijada : null;
+  if (t === null && fijada === null) throw new ErrorValidacion('nada que cambiar');
+  const { rowCount } = await pool.query(
+    'UPDATE notas SET texto = coalesce($3, texto), fijada = coalesce($4, fijada) WHERE id = $2 AND usuario_id = $1',
+    [req.usuario.id, id(req.params.id), t, fijada]
+  );
   if (!rowCount) return res.status(404).json({ error: 'No existe' });
   res.json(await una(req.usuario.id, req.params.id));
 }));
