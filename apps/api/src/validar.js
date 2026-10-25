@@ -48,6 +48,13 @@ function tramos(valor) {
 
 const minutosDelDia = (d) => (d.tipo === 'trabajo' ? d.tramos.reduce((s, t) => s + duracion(t), 0) : 0);
 
+// Jornada opcional de un día extra o compensado (que sea del usuario lo mira dias.js).
+const idJornada = (valor) => {
+  if (valor == null || valor === '') return null;
+  if (!/^\d{1,18}$/.test(String(valor))) throw new ErrorValidacion('jornada: no existe');
+  return String(valor);
+};
+
 const minutos = (valor, campo, min) => {
   if (!Number.isInteger(valor) || valor < min || valor > 1440) throw new ErrorValidacion(`${campo}: entre ${min} y 1440 minutos`);
   return valor;
@@ -63,11 +70,16 @@ function dia(body) {
   const d = { tipo: body.tipo, tramos: body.tipo === 'trabajo' ? tramos(body.tramos) : [], nota: nota || null, extra: null, compensa: 0 };
   if (d.tipo === 'trabajo' && body.extra) {
     const m = minutos(body.extra.minutos, 'horas extra', 1);
-    if (m > minutosDelDia(d)) throw new ErrorValidacion('horas extra: no pueden ser más que las trabajadas ese día');
+    // En días de jornada (modo "por jornadas") cuenta la jornada, no lo trabajado.
+    if (!body.extra.jornadaId && m > minutosDelDia(d)) throw new ErrorValidacion('horas extra: no pueden ser más que las trabajadas ese día');
     if (!['dinero', 'horas'].includes(body.extra.pago)) throw new ErrorValidacion('horas extra: elegí si se pagan o van a horas libres');
-    d.extra = { minutos: m, pago: body.extra.pago, cobrada: body.extra.pago === 'dinero' && body.extra.cobrada === true };
+    d.extra = { minutos: m, pago: body.extra.pago, cobrada: body.extra.pago === 'dinero' && body.extra.cobrada === true, jornadaId: idJornada(body.extra.jornadaId) };
   }
-  if (d.tipo === 'compensado') d.compensa = minutos(body.compensa, 'horas libres usadas', 15);
+  d.compensaJornadaId = null;
+  if (d.tipo === 'compensado') {
+    d.compensa = minutos(body.compensa, 'horas libres usadas', 15);
+    d.compensaJornadaId = idJornada(body.compensaJornadaId);
+  }
   return d;
 }
 

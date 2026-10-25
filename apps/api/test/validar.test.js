@@ -76,11 +76,19 @@ test('lote: fechas válidas, sin repetir, máximo 93', () => {
 
 test('horas extra y libre compensado', () => {
   const t8 = { tipo: 'trabajo', tramos: [{ inicio: '07:00', fin: '15:00' }] };
-  assert.deepStrictEqual(dia({ ...t8, extra: { minutos: 120, pago: 'dinero', cobrada: true } }).extra, { minutos: 120, pago: 'dinero', cobrada: true });
+  assert.deepStrictEqual(dia({ ...t8, extra: { minutos: 120, pago: 'dinero', cobrada: true } }).extra, { minutos: 120, pago: 'dinero', cobrada: true, jornadaId: null });
   assert.strictEqual(dia({ ...t8, extra: { minutos: 60, pago: 'horas', cobrada: true } }).extra.cobrada, false);
   assert.throws(() => dia({ ...t8, extra: { minutos: 500, pago: 'horas' } }), E);
   assert.throws(() => dia({ ...t8, extra: { minutos: 60 } }), E);
   assert.strictEqual(dia({ tipo: 'libre', extra: { minutos: 60, pago: 'horas' } }).extra, null);
   assert.strictEqual(dia({ tipo: 'compensado', compensa: 480 }).compensa, 480);
   assert.throws(() => dia({ tipo: 'compensado' }), E);
+});
+
+test('jornada de la extra y del compensado', () => {
+  const t8 = { tipo: 'trabajo', tramos: [{ inicio: '07:00', fin: '15:00' }] };
+  assert.strictEqual(dia({ ...t8, extra: { minutos: 480, pago: 'horas', jornadaId: '7' } }).extra.jornadaId, '7');
+  assert.strictEqual(dia({ tipo: 'compensado', compensa: 195, compensaJornadaId: 3 }).compensaJornadaId, '3');
+  assert.strictEqual(dia({ tipo: 'libre', compensaJornadaId: 3 }).compensaJornadaId, null);
+  assert.throws(() => dia({ ...t8, extra: { minutos: 60, pago: 'horas', jornadaId: 'x' } }), E);
 });

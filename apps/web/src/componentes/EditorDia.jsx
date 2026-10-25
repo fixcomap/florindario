@@ -5,7 +5,7 @@ import { TIPOS } from '../datos/tipos.js';
 import Tramos from './Tramos.jsx';
 import Duracion from './Duracion.jsx';
 import { horas, minutosDelDia, tramoCorto } from '../horas.js';
-import { enJornadas } from '../jornadas.js';
+import { enDias, saldoEnDias } from '../jornadas.js';
 
 const TRAMO = { inicio: '09:00', fin: '13:00' };
 const SIN_HORARIO = TIPOS.filter((t) => t.id !== 'trabajo');
@@ -56,6 +56,14 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
   const tramos = turno ? turno.tramos : propios;
   const [extra, setExtra] = useState(dia?.extra || null);
   const [compensa, setCompensa] = useState(dia?.compensa || jornadas[0]?.minutosDia || 480);
+  const [compensaJornadaId, setCompensaJornadaId] = useState(dia?.compensaJornadaId || jornadas[0]?.id || null);
+  const enJornadas = modoBolsa === 'jornadas' && jornadas.length > 0;
+  const jornadaDe = (id) => jornadas.find((j) => j.id === id);
+  // Jornada del día que se carga (paso 1), para contar la extra en días de esa jornada.
+  const jornadaDelDia = jornadaDe(grupo?.id) || jornadas[0];
+  const extraEnDias = enJornadas && extra?.pago === 'horas';
+  const jornadaExtra = jornadaDe(extra?.jornadaId) || jornadaDelDia;
+  const compensaJornada = jornadaDe(compensaJornadaId) || jornadas[0];
   const sinHorario = SIN_HORARIO.filter((t) => t.id !== 'compensado' || modoBolsa !== 'ninguna');
   const trabajadas = minutosDelDia({ tipo: 'trabajo', tramos });
   const [error, setError] = useState('');
@@ -83,8 +91,11 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
       fecha,
       tipo: tipoDia,
       tramos: tipoDia === 'trabajo' ? tramos : [],
-      extra: tipoDia === 'trabajo' && extra ? { ...extra, minutos: Math.min(extra.minutos, trabajadas) } : null,
+      extra: tipoDia === 'trabajo' && extra
+        ? (extraEnDias ? { ...extra, jornadaId: jornadaExtra.id } : { ...extra, jornadaId: null, minutos: Math.min(extra.minutos, trabajadas) })
+        : null,
       compensa: tipoDia === 'compensado' ? compensa : 0,
+      compensaJornadaId: tipoDia === 'compensado' && enJornadas ? compensaJornada.id : null,
     })),
   });
 
@@ -134,20 +145,45 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
             </label>
             {extra && (
               <>
-                <div className="fila-extra">
-                  <Duracion etiqueta="¿Cuántas?" valor={extra.minutos} cambiar={(minutos) => setExtra({ ...extra, minutos })} />
-                  <button type="button" className="chip" onClick={() => setExtra({ ...extra, minutos: trabajadas })}>Todo el día ({horas(trabajadas)})</button>
-                </div>
                 {modoBolsa !== 'ninguna' && <div className="tipos">
-                  {[['dinero', '💶 Me las pagan'], ['horas', modoBolsa === 'jornadas' ? '🕒 Me las devuelven en libres' : '🕒 Horas libres']].map(([id, texto]) => (
+                  {[['dinero', '💶 Me las pagan'], ['horas', enJornadas ? '🕒 Me devuelven el día' : '🕒 Horas libres']].map(([id, texto]) => (
                     <button key={id} type="button" className={extra.pago === id ? 'activo' : ''} aria-pressed={extra.pago === id}
-                      onClick={() => setExtra({ ...extra, pago: id, cobrada: id === 'dinero' && extra.cobrada })}>{texto}</button>
+                      onClick={() => setExtra({
+                        ...extra, pago: id, cobrada: id === 'dinero' && extra.cobrada,
+                        ...(id === 'horas' && enJornadas ? { minutos: jornadaExtra.minutosDia, jornadaId: jornadaExtra.id } : {}),
+                      })}>{texto}</button>
                   ))}
                 </div>}
+                {extraEnDias ? (
+                  <>
+                    {jornadas.length > 1 && (
+                      <div className="selector-jornada">
+                        {jornadas.map((j) => (
+                          <button key={j.id} type="button" className={j === jornadaExtra ? 'activo' : ''}
+                            onClick={() => setExtra({ ...extra, jornadaId: j.id, minutos: Math.round((extra.minutos / jornadaExtra.minutosDia) * j.minutosDia) })}>{j.nombre}</button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="selector-jornada">
+                      {[0.5, 1, 2].map((n) => (
+                        <button key={n} type="button" className={extra.minutos === Math.round(n * jornadaExtra.minutosDia) ? 'activo' : ''}
+                          onClick={() => setExtra({ ...extra, jornadaId: jornadaExtra.id, minutos: Math.round(n * jornadaExtra.minutosDia) })}>
+                          {n === 0.5 ? '½ día' : n === 1 ? '1 día' : '2 días'}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="tenue">Te devuelven: <strong>{enDias(extra.minutos, jornadaExtra)}</strong></p>
+                  </>
+                ) : (
+                  <div className="fila-extra">
+                    <Duracion etiqueta="¿Cuántas?" valor={extra.minutos} cambiar={(minutos) => setExtra({ ...extra, minutos })} />
+                    <button type="button" className="chip" onClick={() => setExtra({ ...extra, minutos: trabajadas })}>Todo el día ({horas(trabajadas)})</button>
+                  </div>
+                )}
                 {extra.pago === 'dinero' && (
                   <label className="casilla"><input type="checkbox" checked={extra.cobrada} onChange={(e) => setExtra({ ...extra, cobrada: e.target.checked })} /><span>Ya las cobré</span></label>
                 )}
-                {extra.minutos > trabajadas && <p className="error">No pueden ser más que las {horas(trabajadas)} trabajadas.</p>}
+                {!extraEnDias && extra.minutos > trabajadas && <p className="error">No pueden ser más que las {horas(trabajadas)} trabajadas.</p>}
               </>
             )}
           </div>
@@ -155,19 +191,30 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
 
         {tipoDia === 'compensado' && (
           <div className="extra">
-            {modoBolsa === 'jornadas' && jornadas.length > 0 && (
+            {enJornadas ? (
               <>
-                <p className="paso">¿Qué jornada te devuelven?</p>
+                <p className="paso">¿Qué te devuelven?</p>
+                {jornadas.length > 1 && (
+                  <div className="selector-jornada">
+                    {jornadas.map((j) => (
+                      <button key={j.id} type="button" className={j === compensaJornada ? 'activo' : ''}
+                        onClick={() => { setCompensaJornadaId(j.id); setCompensa(Math.round((compensa / compensaJornada.minutosDia) * j.minutosDia)); }}>{j.nombre}</button>
+                    ))}
+                  </div>
+                )}
                 <div className="selector-jornada">
-                  {jornadas.map((j) => (
-                    <button key={j.id} type="button" className={compensa === j.minutosDia ? 'activo' : ''} onClick={() => setCompensa(j.minutosDia)}>{j.nombre}</button>
+                  {[0.5, 1, 2].map((n) => (
+                    <button key={n} type="button" className={compensa === Math.round(n * compensaJornada.minutosDia) ? 'activo' : ''}
+                      onClick={() => setCompensa(Math.round(n * compensaJornada.minutosDia))}>{n === 0.5 ? '½ día' : n === 1 ? '1 día' : '2 días'}</button>
                   ))}
                 </div>
+                <p className="tenue">Usás: <strong>{enDias(compensa, compensaJornada)}</strong></p>
               </>
+            ) : (
+              <Duracion etiqueta="Horas libres que usás" valor={compensa} cambiar={setCompensa} />
             )}
-            <Duracion etiqueta={modoBolsa === 'jornadas' ? 'Equivale a' : 'Horas libres que usás'} valor={compensa} cambiar={setCompensa} />
             {bolsa && (
-              <p className="tenue">Te deben: <strong>{modoBolsa === 'jornadas' ? enJornadas(bolsa.saldo + (dia?.compensa || 0), jornadas) : horas(bolsa.saldo + (dia?.compensa || 0))}</strong></p>
+              <p className="tenue">Te deben: <strong>{enJornadas ? saldoEnDias(bolsa.saldo + (dia?.compensa || 0), bolsa.porJornada, jornadas) : horas(bolsa.saldo + (dia?.compensa || 0))}</strong></p>
             )}
           </div>
         )}
