@@ -1,15 +1,16 @@
 import { horas } from '../horas.js';
 import { estimar, euros } from '../sueldo.js';
 
-// Estimación del sueldo del mes con las tarifas de Cuenta y los días cargados.
+// Estimación del sueldo del mes con las tarifas de Cuenta y los días cargados;
+// plegada hasta que se toca.
 export default function SueldoMes({ tarifas, dias, jornadas }) {
   if (!tarifas) {
     return <p className="tenue pista">💶 <a href="/cuenta">Cargá tu sueldo</a> para ver cuánto cobrarías este mes.</p>;
   }
   const r = estimar(tarifas, dias, jornadas);
   return (
-    <section className="panel-extra sueldo">
-      <h2>Sueldo estimado</h2>
+    <details className="panel-extra sueldo">
+      <summary><h2>💶 Sueldo estimado</h2><span className="tenue">Ver</span></summary>
       <ul className="lineas-sueldo">
         {r.lineas.map((l) => (
           <li key={l.concepto}><span>{l.concepto}{l.minutos ? <small className="tenue"> · {horas(l.minutos)}</small> : null}</span><span>{euros(l.cent)}</span></li>
@@ -22,6 +23,6 @@ export default function SueldoMes({ tarifas, dias, jornadas }) {
       {r.sinTarifa && <p className="aviso">Hay días en una jornada sin tarifa: cargala en Cuenta.</p>}
       {r.asignados > 0 && <p className="tenue letra-chica">{r.asignados} {r.asignados === 1 ? 'día sin jornada se contó' : 'días sin jornada se contaron'} en la jornada con más días; abrilos y elegí su jornada para afinar.</p>}
       <p className="tenue letra-chica">Estimación según tu calendario; no incluye pagas extra, pluses de convenio ni otros conceptos de tu nómina.</p>
-    </section>
+    </details>
   );
 }
