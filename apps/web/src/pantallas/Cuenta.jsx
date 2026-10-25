@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { pedir } from '../api.js';
+import AjustesSueldo from '../componentes/AjustesSueldo.jsx';
 
 const BOLSA = [
   ['jornadas', 'Días compensatorios', 'Te las devuelven en días de una jornada: p. ej. 1 día en Jornada 20 h.'],
@@ -37,6 +38,7 @@ export default function Cuenta({ usuario, cambiar }) {
         ))}
         {usuario.bolsa === 'jornadas' && <p className="tenue">Configurá tus jornadas en <a href="/plantillas">Plantillas</a>.</p>}
       </section>
+      <AjustesSueldo />
       <p><a href="/terminos">Términos de uso</a> · <a href="/privacidad">Política de privacidad</a></p>
       <button className="boton secundario peligro" onClick={borrar}>Borrar mi cuenta</button>
       {error && <p className="error">{error}</p>}

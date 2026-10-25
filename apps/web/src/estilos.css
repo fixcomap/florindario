@@ -246,3 +246,17 @@ main.con-barra { padding-bottom: 90px; }
 .contador span { text-align: center; font-size: 0.95rem; }
 .contador button { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: #fdf0f4; color: var(--acento); font-size: 1.4rem; font-weight: 700; cursor: pointer; }
 .contador button:disabled { opacity: 0.35; }
+
+/* ---------- sueldo ---------- */
+.campos-sueldo { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-top: 6px; }
+.campos-sueldo label:first-child { grid-column: 1 / -1; }
+.campo-unidad { display: flex; align-items: center; gap: 6px; }
+.campo-unidad input { margin-top: 4px; }
+.campo-unidad span { color: var(--tenue); font-size: 0.85rem; white-space: nowrap; }
+.centro-texto { text-align: center; }
+.lineas-sueldo { list-style: none; padding: 0; margin: 4px 0; font-size: 0.92rem; }
+.lineas-sueldo li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--borde); }
+.lineas-sueldo li.total { font-weight: 700; border-bottom: 0; }
+.lineas-sueldo li.neto { font-family: var(--titulo); font-size: 1.15rem; color: var(--hoja); }
+.letra-chica { font-size: 0.75rem; margin-top: 8px; }
+.ajustes .tipos button.activo { background: #fdf0f4; border-color: var(--acento); color: var(--acento); }
