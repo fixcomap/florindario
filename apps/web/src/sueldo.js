@@ -13,29 +13,62 @@ export function minutosNocturnos({ inicio, fin }) {
 }
 
 // Estimación del mes con las tarifas (céntimos y centésimas de %) y los días del mes.
-export function estimar(t, dias) {
-  let trabajados = 0;
+// Con tarifas por jornada, cada día cobra según la jornada en que se trabajó: por
+// hora (horas × precio) o sueldo fijo repartido por los días trabajados en cada una.
+// Los días sin jornada van a la jornada con más días ese mes.
+export function estimar(t, dias, jornadas = []) {
+  const porJornada = jornadas.length > 0 && t.jornadas?.length > 0;
+  const grupos = new Map(); // clave -> { minutos, extraPagada, dias }
   let nocturnos = 0;
   let domingo = 0;
   let extraPagada = 0;
+  const sinJornada = [];
   for (const d of dias) {
     if (d.tipo !== 'trabajo') continue;
     const m = d.tramos.reduce((s, tr) => s + duracion(tr), 0);
-    trabajados += m;
+    const ep = d.extra?.pago === 'dinero' ? Math.min(d.extra.minutos, m) : 0;
     nocturnos += d.tramos.reduce((s, tr) => s + minutosNocturnos(tr), 0);
     if (desdeIso(d.fecha).getDay() === 0) domingo += m;
-    if (d.extra?.pago === 'dinero') extraPagada += Math.min(d.extra.minutos, m);
+    extraPagada += ep;
+    const clave = !porJornada ? 'general' : jornadas.some((j) => j.id === d.jornadaId) ? d.jornadaId : null;
+    if (clave === null) { sinJornada.push({ m, ep }); continue; }
+    const g = grupos.get(clave) || { minutos: 0, extraPagada: 0, dias: 0 };
+    g.minutos += m; g.extraPagada += ep; g.dias += 1;
+    grupos.set(clave, g);
   }
-  // Las extras pagadas se cobran a su precio; el resto de horas, a la tarifa normal.
+  if (porJornada) {
+    const principal = [...grupos].sort((a, b) => b[1].dias - a[1].dias)[0]?.[0] || t.jornadas[0].jornadaId;
+    const g = grupos.get(principal) || { minutos: 0, extraPagada: 0, dias: 0 };
+    sinJornada.forEach(({ m, ep }) => { g.minutos += m; g.extraPagada += ep; g.dias += 1; });
+    grupos.set(principal, g);
+  }
+  const totalDias = [...grupos.values()].reduce((s, g) => s + g.dias, 0);
+
   const lineas = [];
-  if (t.modo === 'mensual') lineas.push({ concepto: 'Sueldo base', cent: t.base });
-  else lineas.push({ concepto: 'Horas normales', minutos: trabajados - extraPagada, cent: Math.round(((trabajados - extraPagada) / 60) * t.base) });
+  for (const [clave, g] of grupos) {
+    const tarifa = clave === 'general' ? t : t.jornadas.find((x) => x.jornadaId === clave);
+    const nombre = clave === 'general' ? null : jornadas.find((j) => j.id === clave)?.nombre;
+    if (!tarifa) { lineas.push({ concepto: `${nombre} · sin tarifa`, cent: 0, sinTarifa: true }); continue; }
+    if (tarifa.modo === 'hora') {
+      const normales = g.minutos - g.extraPagada;
+      lineas.push({ concepto: nombre ? `${nombre} · horas` : 'Horas normales', minutos: normales, cent: Math.round((normales / 60) * tarifa.base) });
+    } else {
+      const parte = totalDias ? g.dias / totalDias : 1;
+      lineas.push({ concepto: nombre ? `${nombre} · ${g.dias} de ${totalDias} días` : 'Sueldo base', cent: Math.round(tarifa.base * parte) });
+    }
+  }
+  if (!grupos.size && t.modo === 'mensual' && !porJornada) lineas.push({ concepto: 'Sueldo base', cent: t.base });
   if (extraPagada && t.extra) lineas.push({ concepto: 'Horas extra pagadas', minutos: extraPagada, cent: Math.round((extraPagada / 60) * t.extra) });
   if (nocturnos && t.nocturna) lineas.push({ concepto: 'Plus nocturnidad', minutos: nocturnos, cent: Math.round((nocturnos / 60) * t.nocturna) });
   if (domingo && t.domingo) lineas.push({ concepto: 'Plus domingo', minutos: domingo, cent: Math.round((domingo / 60) * t.domingo) });
   const bruto = lineas.reduce((s, l) => s + l.cent, 0);
   const descuentos = Math.round((bruto * (t.irpf + t.ss)) / 10000);
-  return { lineas, bruto, descuentos, neto: bruto - descuentos, sinPrecioExtra: extraPagada > 0 && !t.extra };
+  return {
+    lineas, bruto, descuentos, neto: bruto - descuentos,
+    sinPrecioExtra: extraPagada > 0 && !t.extra,
+    sinTarifa: lineas.some((l) => l.sinTarifa),
+    asignados: porJornada ? sinJornada.length : 0,
+  };
 }
 
 // 123456 -> "1.234,56 €"

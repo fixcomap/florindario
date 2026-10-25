@@ -148,7 +148,7 @@ export default function Calendario({ usuario }) {
           {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
       ) : null}
-      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} />}
+      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} />}
 
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
 
@@ -181,7 +181,7 @@ export default function Calendario({ usuario }) {
         <HojaNota fechas={hoja.fechas} cerrar={() => setHoja(null)} cambiado={() => { cargarNotas(); terminar(); }} />
       )}
       {hoja?.tipo === 'plantilla' && (
-        <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} cerrar={() => setHoja(null)} guardado={guardado} />
+        <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} jornadas={jornadas} cerrar={() => setHoja(null)} guardado={guardado} />
       )}
     </main>
   );

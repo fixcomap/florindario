@@ -260,3 +260,6 @@ main.con-barra { padding-bottom: 90px; }
 .lineas-sueldo li.neto { font-family: var(--titulo); font-size: 1.15rem; color: var(--hoja); }
 .letra-chica { font-size: 0.75rem; margin-top: 8px; }
 .ajustes .tipos button.activo { background: #fdf0f4; border-color: var(--acento); color: var(--acento); }
+.tarifa-jornada { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--fondo); }
+.tarifa-jornada .tipos { margin: 6px 0 0; }
+.tarifa-jornada label { margin-bottom: 0; }

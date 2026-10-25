@@ -5,7 +5,7 @@ const { protegerApp } = require('./cuentas');
 const { ErrorValidacion, fecha, fechaEditable, dia, rango, lote } = require('./validar');
 
 const COLUMNAS = `to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos,
-  extra_jornada_id::text, compensa_jornada_id::text`;
+  extra_jornada_id::text, compensa_jornada_id::text, jornada_id::text`;
 
 // Fila de la base -> día del front.
 const aDia = (f) => ({
@@ -16,22 +16,23 @@ const aDia = (f) => ({
   extra: f.extra_minutos ? { minutos: f.extra_minutos, pago: f.extra_pago, cobrada: f.extra_cobrada, jornadaId: f.extra_jornada_id } : null,
   compensa: f.compensa_minutos,
   compensaJornadaId: f.compensa_jornada_id,
+  jornadaId: f.jornada_id,
 });
 
 const GUARDAR = `INSERT INTO dias (usuario_id, fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos,
-    extra_jornada_id, compensa_jornada_id)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    extra_jornada_id, compensa_jornada_id, jornada_id)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
   ON CONFLICT (usuario_id, fecha) DO UPDATE SET tipo = EXCLUDED.tipo, tramos = EXCLUDED.tramos, nota = EXCLUDED.nota,
     extra_minutos = EXCLUDED.extra_minutos, extra_pago = EXCLUDED.extra_pago, extra_cobrada = EXCLUDED.extra_cobrada,
     compensa_minutos = EXCLUDED.compensa_minutos, extra_jornada_id = EXCLUDED.extra_jornada_id,
-    compensa_jornada_id = EXCLUDED.compensa_jornada_id
+    compensa_jornada_id = EXCLUDED.compensa_jornada_id, jornada_id = EXCLUDED.jornada_id
   RETURNING ${COLUMNAS}`;
 const valores = (usuarioId, f, d) => [usuarioId, f, d.tipo, JSON.stringify(d.tramos), d.nota,
-  d.extra?.minutos ?? 0, d.extra?.pago ?? null, d.extra?.cobrada ?? false, d.compensa, d.extra?.jornadaId ?? null, d.compensaJornadaId];
+  d.extra?.minutos ?? 0, d.extra?.pago ?? null, d.extra?.cobrada ?? false, d.compensa, d.extra?.jornadaId ?? null, d.compensaJornadaId, d.jornadaId];
 
 // Las jornadas que se nombran tienen que ser del usuario.
 async function comprobarJornadas(usuarioId, dias) {
-  const ids = [...new Set(dias.flatMap((d) => [d.extra?.jornadaId, d.compensaJornadaId]).filter(Boolean))];
+  const ids = [...new Set(dias.flatMap((d) => [d.extra?.jornadaId, d.compensaJornadaId, d.jornadaId]).filter(Boolean))];
   if (!ids.length) return;
   const { rows: [{ n }] } = await pool.query('SELECT count(*)::int AS n FROM jornadas WHERE usuario_id = $1 AND id = ANY($2::bigint[])', [usuarioId, ids]);
   if (n !== ids.length) throw new ErrorValidacion('jornada: no existe');

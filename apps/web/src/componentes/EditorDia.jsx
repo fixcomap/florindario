@@ -32,12 +32,16 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
   const todos = turnosDePlantillas(plantillas, fechas[0]);
   // Paso 1: la jornada (solo las que tienen turnos; "Sin jornada" si hay plantillas sueltas).
   const grupos = [
-    ...jornadas.filter((j) => todos.some((t) => t.jornadaId === j.id)),
+    ...jornadas,
     ...(todos.some((t) => !jornadas.some((j) => j.id === t.jornadaId)) ? [{ id: null, nombre: 'Sin jornada' }] : []),
   ];
   const deGrupo = (g) => todos.filter((t) => (g.id ? t.jornadaId === g.id : !jornadas.some((j) => j.id === t.jornadaId)));
   const actual = dia?.tipo === 'trabajo' ? todos.find((t) => clave(t.tramos) === clave(dia.tramos)) : null;
-  const [grupoId, setGrupoId] = useState(() => (actual ? (grupos.find((g) => deGrupo(g).includes(actual))?.id ?? null) : grupos[0]?.id ?? null));
+  const [grupoId, setGrupoId] = useState(() => {
+    if (dia?.jornadaId && grupos.some((g) => g.id === dia.jornadaId)) return dia.jornadaId;
+    if (actual) return grupos.find((g) => deGrupo(g).includes(actual))?.id ?? null;
+    return (grupos.find((g) => deGrupo(g).length) || grupos[0])?.id ?? null;
+  });
   const grupo = grupos.find((g) => g.id === grupoId) || grupos[0];
   const turnos = grupo ? deGrupo(grupo) : [];
   // Elección: 'p:<id>' (turno de plantilla), 'otro' (horario a mano) o un tipo sin horario.
@@ -50,7 +54,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
   const elegirGrupo = (g) => {
     setGrupoId(g.id);
     const primero = deGrupo(g)[0];
-    if (primero && (eleccion.startsWith('p:') || eleccion === 'otro')) setEleccion(`p:${primero.id}`);
+    if (eleccion.startsWith('p:') || eleccion === 'otro') setEleccion(primero ? `p:${primero.id}` : 'otro');
   };
   const tipoDia = turno || eleccion === 'otro' ? 'trabajo' : eleccion;
   const [propios, setPropios] = useState(dia?.tipo === 'trabajo' ? dia.tramos : [TRAMO]);
@@ -92,6 +96,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
       fecha,
       tipo: tipoDia,
       tramos: tipoDia === 'trabajo' ? tramos : [],
+      jornadaId: tipoDia === 'trabajo' ? (jornadaDe(grupo?.id)?.id ?? null) : null,
       extra: tipoDia === 'trabajo' && extra
         ? (extraEnDias ? { ...extra, jornadaId: jornadaExtra.id } : { ...extra, jornadaId: null, minutos: Math.min(extra.minutos, trabajadas) })
         : null,
