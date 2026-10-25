@@ -7,10 +7,11 @@ const JSON_ = { 'Content-Type': 'application/json' };
 // Crear una nota (para fechas o general del mes) o editar un post-it (todas sus notas).
 export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
   const [texto, setTexto] = useState(grupo?.texto || '');
+  const [fijada, setFijada] = useState(grupo?.fijada || false);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const destino = grupo ? (grupo.fechas.length ? fechasTexto(grupo.fechas) : 'General del mes')
-    : fechas?.length ? fechasTexto(fechas) : 'General del mes';
+  const destino = grupo ? (grupo.fechas.length ? fechasTexto(grupo.fechas) : 'General')
+    : fechas?.length ? fechasTexto(fechas) : 'General';
 
   async function hacer(fn) {
     setError('');
@@ -26,8 +27,8 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
   }
 
   const guardar = () => hacer(async () => {
-    if (grupo) await Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: JSON_, body: JSON.stringify({ texto }) })));
-    else await pedir('/notas', { method: 'POST', headers: JSON_, body: JSON.stringify(fechas?.length ? { texto, fechas } : { texto, mes }) });
+    if (grupo) await Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: JSON_, body: JSON.stringify({ texto, fijada }) })));
+    else await pedir('/notas', { method: 'POST', headers: JSON_, body: JSON.stringify(fechas?.length ? { texto, fechas, fijada } : { texto, mes, fijada }) });
   });
   const borrar = () => window.confirm('¿Borrar esta nota de todos sus días?')
     && hacer(() => Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'DELETE' }))));
@@ -36,8 +37,12 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
     <div className="fondo-hoja" onClick={cerrar}>
       <section className="hoja" role="dialog" aria-label={grupo ? 'Editar nota' : 'Nueva nota'} onClick={(e) => e.stopPropagation()}>
         <h2>{grupo ? 'Nota' : 'Nueva nota'}</h2>
-        <p className="tenue">📌 {destino}</p>
+        <p className="tenue">📅 {destino}</p>
         <textarea className="texto-nota" value={texto} maxLength={500} rows={4} autoFocus placeholder="Escribí tu nota…" onChange={(e) => setTexto(e.target.value)} />
+        <label className="casilla fijar">
+          <input type="checkbox" checked={fijada} onChange={(e) => setFijada(e.target.checked)} />
+          <span>📌 Fijar: se ve en el tablero de todos los meses</span>
+        </label>
         {error && <p className="error">{error}</p>}
         <div className="acciones">
           <button className="boton" disabled={enviando || !texto.trim()} onClick={guardar}>Guardar</button>

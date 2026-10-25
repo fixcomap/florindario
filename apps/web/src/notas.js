@@ -9,13 +9,14 @@ export function agrupar(notas) {
   const grupos = new Map();
   for (const n of notas) {
     const k = normal(n.texto);
-    const g = grupos.get(k) || { texto: n.texto, ids: [], fechas: [], general: false };
+    const g = grupos.get(k) || { texto: n.texto, ids: [], fechas: [], general: false, fijada: false };
+    g.fijada ||= n.fijada;
     g.ids.push(n.id);
     g.fechas.push(...n.fechas);
     g.general ||= !n.fechas.length;
     grupos.set(k, g);
   }
-  return [...grupos.values()].map((g) => ({ ...g, fechas: [...new Set(g.fechas)].sort() }));
+  return [...grupos.values()].map((g) => ({ ...g, fechas: [...new Set(g.fechas)].sort() })).sort((a, b) => b.fijada - a.fijada);
 }
 
 export const colorDe = (texto) => COLORES[[...normal(texto)].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 997, 7) % COLORES.length];

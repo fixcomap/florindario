@@ -56,7 +56,7 @@ export default function Calendario({ usuario }) {
 
   const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
-  const gruposMes = agrupar(notas.filter((n) => !n.fechas.length || n.fechas.some(delMes)));
+  const gruposMes = agrupar(notas.filter((n) => n.fijada || !n.fechas.length || n.fechas.some(delMes)));
   const delMesCargados = Object.values(dias).filter((d) => delMes(d.fecha));
   const totalMes = delMesCargados.reduce((s, d) => s + minutosDelDia(d), 0);
   const suma = (filtro) => delMesCargados.filter((d) => d.extra && filtro(d.extra)).reduce((s, d) => s + d.extra.minutos, 0);
