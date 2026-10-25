@@ -30,7 +30,10 @@ function tarifas(body) {
     if (!/^\d{1,18}$/.test(String(j?.jornadaId ?? ''))) throw new Invalido('jornada: no existe');
     if (!['mensual', 'hora'].includes(j.modo)) throw new Invalido('modo: mensual u hora');
     if (!Number.isInteger(j.base) || j.base < 0 || j.base > 100000000) throw new Invalido('base: valor fuera de rango');
-    return { jornadaId: String(j.jornadaId), modo: j.modo, base: j.base };
+    const domingo = j.domingo ?? 0;
+    if (!Number.isInteger(domingo) || domingo < 0 || domingo > 1000000) throw new Invalido('domingo: valor fuera de rango');
+    if (!['dia', 'hora'].includes(j.domingoPor ?? 'dia')) throw new Invalido('domingo: por día o por hora');
+    return { jornadaId: String(j.jornadaId), modo: j.modo, base: j.base, domingo, domingoPor: j.domingoPor ?? 'dia' };
   });
   return t;
 }
@@ -46,7 +49,8 @@ router.get('/sueldo', async (req, res, next) => {
     const { rows } = await pool.query(SELECT, [req.usuario.id]);
     if (!rows.length) return res.json(null);
     const { rows: jornadas } = await pool.query(
-      'SELECT jornada_id::text AS "jornadaId", modo, base_cent AS base FROM sueldos_jornadas WHERE usuario_id = $1', [req.usuario.id]);
+      `SELECT jornada_id::text AS "jornadaId", modo, base_cent AS base, domingo_cent AS domingo, domingo_por AS "domingoPor"
+       FROM sueldos_jornadas WHERE usuario_id = $1`, [req.usuario.id]);
     res.json({ ...rows[0], jornadas });
   } catch (err) {
     next(err);
@@ -66,8 +70,8 @@ router.put('/sueldo', async (req, res, next) => {
       await cliente.query('BEGIN');
       await cliente.query('DELETE FROM sueldos_jornadas WHERE usuario_id = $1', [req.usuario.id]);
       for (const j of t.jornadas) {
-        await cliente.query('INSERT INTO sueldos_jornadas (usuario_id, jornada_id, modo, base_cent) VALUES ($1, $2, $3, $4)',
-          [req.usuario.id, j.jornadaId, j.modo, j.base]);
+        await cliente.query('INSERT INTO sueldos_jornadas (usuario_id, jornada_id, modo, base_cent, domingo_cent, domingo_por) VALUES ($1, $2, $3, $4, $5, $6)',
+          [req.usuario.id, j.jornadaId, j.modo, j.base, j.domingo, j.domingoPor]);
       }
       await cliente.query(
       `INSERT INTO sueldos (usuario_id, modo, base_cent, extra_cent, nocturna_cent, domingo_cent, irpf_cent, ss_cent)

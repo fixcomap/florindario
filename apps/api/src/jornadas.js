@@ -23,13 +23,17 @@ function jornada(body) {
   if (nombre.length < 2 || nombre.length > 40) throw new ErrorValidacion('nombre: entre 2 y 40 caracteres');
   const m = body?.minutosDia;
   if (!Number.isInteger(m) || m < 15 || m > 1440) throw new ErrorValidacion('duración del día: entre 15 minutos y 24 horas');
-  return { nombre, minutosDia: m };
+  const domingo = body?.domingo ?? 'normal';
+  if (!['normal', 'libres', 'pago'].includes(domingo)) throw new ErrorValidacion('domingo: normal, libres o pago');
+  const dd = body?.domingoDias ?? 1;
+  if (typeof dd !== 'number' || dd < 0.5 || dd > 5 || (dd * 2) % 1) throw new ErrorValidacion('días por domingo: de ½ en ½, hasta 5');
+  return { nombre, minutosDia: m, domingo, domingoMedios: dd * 2 };
 }
 const id = (valor) => {
   if (!/^\d{1,18}$/.test(valor)) throw new ErrorValidacion('jornada: no existe');
   return valor;
 };
-const COLS = 'id::text, nombre, minutos_dia AS "minutosDia"';
+const COLS = 'id::text, nombre, minutos_dia AS "minutosDia", domingo, (domingo_medios / 2.0)::float8 AS "domingoDias"';
 
 const router = express.Router();
 router.use('/jornadas', protegerApp);
@@ -43,14 +47,15 @@ router.post('/jornadas', manejar(async (req, res) => {
   const j = jornada(req.body);
   const { rows: [{ n }] } = await pool.query('SELECT count(*)::int AS n FROM jornadas WHERE usuario_id = $1', [req.usuario.id]);
   if (n >= MAX_JORNADAS) throw new ErrorValidacion(`como mucho ${MAX_JORNADAS} jornadas`);
-  const { rows } = await pool.query(`INSERT INTO jornadas (usuario_id, nombre, minutos_dia) VALUES ($1, $2, $3) RETURNING ${COLS}`, [req.usuario.id, j.nombre, j.minutosDia]);
+  const { rows } = await pool.query(`INSERT INTO jornadas (usuario_id, nombre, minutos_dia, domingo, domingo_medios) VALUES ($1, $2, $3, $4, $5) RETURNING ${COLS}`,
+    [req.usuario.id, j.nombre, j.minutosDia, j.domingo, j.domingoMedios]);
   res.status(201).json(rows[0]);
 }));
 
 router.put('/jornadas/:id', manejar(async (req, res) => {
   const j = jornada(req.body);
-  const { rows } = await pool.query(`UPDATE jornadas SET nombre = $3, minutos_dia = $4 WHERE id = $2 AND usuario_id = $1 RETURNING ${COLS}`,
-    [req.usuario.id, id(req.params.id), j.nombre, j.minutosDia]);
+  const { rows } = await pool.query(`UPDATE jornadas SET nombre = $3, minutos_dia = $4, domingo = $5, domingo_medios = $6 WHERE id = $2 AND usuario_id = $1 RETURNING ${COLS}`,
+    [req.usuario.id, id(req.params.id), j.nombre, j.minutosDia, j.domingo, j.domingoMedios]);
   if (!rows.length) return res.status(404).json({ error: 'No existe' });
   res.json(rows[0]);
 }));

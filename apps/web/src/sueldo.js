@@ -16,7 +16,9 @@ export function minutosNocturnos({ inicio, fin }) {
 // Con tarifas por jornada, cada día cobra según la jornada en que se trabajó: por
 // hora (horas × precio) o sueldo fijo repartido por los días trabajados en cada una.
 // Los días sin jornada van a la jornada con más días ese mes.
-export function estimar(t, dias, jornadas = []) {
+// Domingos "a mes vencido": los del mes anterior (diasAnterior) se cobran este mes.
+export function estimar(t, dias, jornadas = [], diasAnterior = [], mesAnterior = '') {
+  const reglaDomingo = (d) => jornadas.find((j) => j.id === d.jornadaId)?.domingo || 'normal';
   const porJornada = jornadas.length > 0 && t.jornadas?.length > 0;
   const grupos = new Map(); // clave -> { minutos, extraPagada, dias }
   let nocturnos = 0;
@@ -28,7 +30,7 @@ export function estimar(t, dias, jornadas = []) {
     const m = d.tramos.reduce((s, tr) => s + duracion(tr), 0);
     const ep = d.extra?.pago === 'dinero' ? Math.min(d.extra.minutos, m) : 0;
     nocturnos += d.tramos.reduce((s, tr) => s + minutosNocturnos(tr), 0);
-    if (desdeIso(d.fecha).getDay() === 0) domingo += m;
+    if (desdeIso(d.fecha).getDay() === 0 && reglaDomingo(d) === 'normal') domingo += m;
     extraPagada += ep;
     const clave = !porJornada ? 'general' : jornadas.some((j) => j.id === d.jornadaId) ? d.jornadaId : null;
     if (clave === null) { sinJornada.push({ m, ep }); continue; }
@@ -61,12 +63,28 @@ export function estimar(t, dias, jornadas = []) {
   if (extraPagada && t.extra) lineas.push({ concepto: 'Horas extra pagadas', minutos: extraPagada, cent: Math.round((extraPagada / 60) * t.extra) });
   if (nocturnos && t.nocturna) lineas.push({ concepto: 'Plus nocturnidad', minutos: nocturnos, cent: Math.round((nocturnos / 60) * t.nocturna) });
   if (domingo && t.domingo) lineas.push({ concepto: 'Plus domingo', minutos: domingo, cent: Math.round((domingo / 60) * t.domingo) });
+  // Domingos del mes anterior en jornadas que los pagan a mes vencido.
+  const vencidos = new Map();
+  for (const d of diasAnterior) {
+    if (d.tipo !== 'trabajo' || desdeIso(d.fecha).getDay() !== 0 || reglaDomingo(d) !== 'pago') continue;
+    const v = vencidos.get(d.jornadaId) || { n: 0, minutos: 0 };
+    v.n += 1;
+    v.minutos += d.tramos.reduce((s, tr) => s + duracion(tr), 0);
+    vencidos.set(d.jornadaId, v);
+  }
+  for (const [id, v] of vencidos) {
+    const tarifa = t.jornadas?.find((x) => x.jornadaId === id);
+    const nombre = jornadas.find((j) => j.id === id)?.nombre;
+    const cent = !tarifa?.domingo ? 0 : tarifa.domingoPor === 'hora' ? Math.round((v.minutos / 60) * tarifa.domingo) : v.n * tarifa.domingo;
+    lineas.push({ concepto: `Domingos de ${mesAnterior} · ${nombre} · ${v.n}`, minutos: v.minutos, cent, sinImporte: !tarifa?.domingo });
+  }
   const bruto = lineas.reduce((s, l) => s + l.cent, 0);
   const descuentos = Math.round((bruto * (t.irpf + t.ss)) / 10000);
   return {
     lineas, bruto, descuentos, neto: bruto - descuentos,
     sinPrecioExtra: extraPagada > 0 && !t.extra,
     sinTarifa: lineas.some((l) => l.sinTarifa),
+    domingoSinImporte: lineas.some((l) => l.sinImporte),
     asignados: porJornada ? sinJornada.length : 0,
   };
 }
