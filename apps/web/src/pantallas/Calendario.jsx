@@ -77,25 +77,18 @@ export default function Calendario() {
   };
 
   return (
-    <main className={eligiendo ? 'con-barra' : ''}>
+    <main className="con-barra">
       <div className="mes">
         <button className="flecha" onClick={() => mover(-1)} aria-label="Mes anterior">‹</button>
         <h1>{nombreMes(mes.anio, mes.mes)}</h1>
         <button className="flecha" onClick={() => mover(1)} aria-label="Mes siguiente">›</button>
       </div>
-      <div className="herramientas">
-        {eligiendo ? (
-          <>
-            <span className="tenue">Tocá días o el total de una semana</span>
-            <button className="chip" onClick={() => alternar(semanas.flat().filter(delMes))}>Todo el mes</button>
-          </>
-        ) : (
-          <>
-            <button className="chip" onClick={() => setEligiendo(true)}>☑ Elegir días</button>
-            <a className="chip" href="/plantillas">Plantillas</a>
-          </>
-        )}
-      </div>
+      {eligiendo && (
+        <div className="herramientas">
+          <span className="tenue">Tocá días o el ☑ de una semana</span>
+          <button className="chip" onClick={() => alternar(semanas.flat().filter(delMes))}>Todo el mes</button>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
 
       <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
@@ -120,7 +113,7 @@ export default function Calendario() {
           {(extraMes.bolsa > 0 || usadasMes > 0) && (
             <p>🕒 A horas libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · usadas {horas(usadasMes)}</>}</p>
           )}
-          {extras && (
+          {extras && (extras.bolsa.generadas > 0 || extras.bolsa.usadas > 0) && (
             <p className="tenue">Bolsa de horas libres: <strong className={extras.bolsa.saldo < 0 ? 'aviso' : ''}>{extras.bolsa.saldo < 0 ? '−' : ''}{horas(Math.abs(extras.bolsa.saldo))}</strong>
               {extras.dinero.sinCobrar > 0 && <> · sin cobrar en total: {horas(extras.dinero.sinCobrar)}</>}</p>
           )}
@@ -130,6 +123,12 @@ export default function Calendario() {
         {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}
       </ul>
 
+      {!eligiendo && (
+        <nav className="barra-acciones">
+          <button className="capsula" onClick={() => setEligiendo(true)}>☑ Elegir días</button>
+          <a className="capsula principal" href="/plantillas">✿ Plantillas</a>
+        </nav>
+      )}
       {eligiendo && (
         <div className="barra-eleccion">
           <span><strong>{elegidos.size}</strong> {elegidos.size === 1 ? 'día' : 'días'}</span>
@@ -174,6 +173,7 @@ function Semana({ semana, dias, delMes, tocar, elegidos, eligiendo, elegirSemana
                 {d.tipo === 'trabajo' ? d.tramos.map((tr) => <span key={tr.inicio}>{tramoCorto(tr)}</span>) : <span>{t.icono}</span>}
               </span>
             )}
+            {minutosDelDia(d) > 0 && <span className="horas-dia">{horas(minutosDelDia(d)).replace(' h ', ':').replace(' h', 'h')}</span>}
             {d?.extra && (
               <span className={`marca-extra ${d.extra.pago}${d.extra.pago === 'dinero' && !d.extra.cobrada ? ' pendiente' : ''}`}>
                 +{horas(d.extra.minutos).replace(' h ', ':').replace(' h', 'h')}
