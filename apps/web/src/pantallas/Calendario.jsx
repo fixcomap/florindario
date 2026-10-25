@@ -14,7 +14,7 @@ import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 // semana a la derecha y el total del mes abajo. Tocar un día lo edita; en modo
 // "Elegir días" se marcan varios (o semanas enteras) y se cargan de una vez.
 export default function Calendario({ usuario }) {
-  const modoBolsa = usuario?.bolsa || 'horas';
+  const modoBolsa = usuario?.bolsa || 'jornadas';
   const ahora = new Date();
   const [mes, setMes] = useState({ anio: ahora.getFullYear(), mes: ahora.getMonth() });
   const [dias, setDias] = useState({}); // fecha -> día
@@ -133,7 +133,7 @@ export default function Calendario({ usuario }) {
           )}
           {modoBolsa !== 'ninguna' && (extraMes.bolsa > 0 || usadasMes > 0) && (
             modoBolsa === 'jornadas' && jornadas.length ? (
-              <p>🕒 Días a devolver este mes: <strong>{sumaEnDias(delMesCargados.filter((d) => d.extra?.pago === 'horas').map((d) => d.extra), jornadas) || '—'}</strong>
+              <p>🗓 Días compensatorios este mes: <strong>{sumaEnDias(delMesCargados.filter((d) => d.extra?.pago === 'horas').map((d) => d.extra), jornadas) || '—'}</strong>
                 {usadasMes > 0 && <> · devueltos {sumaEnDias(delMesCargados.filter((d) => d.compensa).map((d) => ({ minutos: d.compensa, jornadaId: d.compensaJornadaId })), jornadas)}</>}</p>
             ) : (
               <p>🕒 A libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · devueltas {horas(usadasMes)}</>}</p>

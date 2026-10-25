@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { pedir } from '../api.js';
 
 const BOLSA = [
+  ['jornadas', 'Días compensatorios', 'Te las devuelven en días de una jornada: p. ej. 1 día en Jornada 20 h.'],
   ['horas', 'Bolsa de horas', 'Las extras que no te pagan suman horas libres que después usás.'],
-  ['jornadas', 'Por jornadas', 'Te las devuelven en días: p. ej. una jornada de 40 h = 2 de 20 h.'],
   ['ninguna', 'No me las devuelven', 'Las extras solo se pagan.'],
 ];
 
