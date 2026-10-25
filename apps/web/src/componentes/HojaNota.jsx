@@ -27,7 +27,7 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
   }
 
   const guardar = () => hacer(async () => {
-    if (grupo) await Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: JSON_, body: JSON.stringify({ texto, fijada }) })));
+    if (grupo) await Promise.all(grupo.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: JSON_, body: JSON.stringify({ texto, fijada, mes }) })));
     else await pedir('/notas', { method: 'POST', headers: JSON_, body: JSON.stringify(fechas?.length ? { texto, fechas, fijada } : { texto, mes, fijada }) });
   });
   const borrar = () => window.confirm('¿Borrar esta nota de todos sus días?')
@@ -41,7 +41,7 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
         <textarea className="texto-nota" value={texto} maxLength={500} rows={4} autoFocus placeholder="Escribí tu nota…" onChange={(e) => setTexto(e.target.value)} />
         <label className="casilla fijar">
           <input type="checkbox" checked={fijada} onChange={(e) => setFijada(e.target.checked)} />
-          <span>📌 Fijar: se ve en el tablero de todos los meses</span>
+          <span>📌 Fijar: se ve también en los meses siguientes, hasta que le quites el pin</span>
         </label>
         {error && <p className="error">{error}</p>}
         <div className="acciones">
