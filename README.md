@@ -18,8 +18,13 @@ Front React (Vite) en Cloudflare Pages + API Node (Express) en Cloud Run + Postg
 | Fase | Qué | |
 |---|---|---|
 | 1 | Esqueleto: API con `/salud`, login con Google, front, migraciones | ✅ |
+<<<<<<< HEAD
 | 2 | Calendario mensual, editar días (tramos, jornada partida, noche) y tipos de día | ✅ |
 | 3 | Plantillas de horario y elegir varios días para cargarlos de una vez | ✅ |
+=======
+| 2 | Calendario mensual, editar días (tramos, jornada partida, noche) y tipos de día; cuentas abiertas con protección automática | ✅ |
+| 3 | Semanas tipo y aplicarlas a semanas o meses | ⏳ |
+>>>>>>> origin/main
 | 4 | Vacaciones por rango y horas por semana y mes | |
 
 ## Desarrollo local
