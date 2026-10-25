@@ -23,7 +23,7 @@ export default function AjustesSueldo() {
       setJornadas(js);
       setPorJornada(Object.fromEntries(js.map((j) => {
         const x = t?.jornadas?.find((y) => y.jornadaId === j.id);
-        return [j.id, { modo: x?.modo || 'mensual', base: deCent(x?.base) }];
+        return [j.id, { modo: x?.modo || 'mensual', base: deCent(x?.base), domingo: deCent(x?.domingo), domingoPor: x?.domingoPor || 'dia' }];
       })));
       return t;
     }).then((t) => setValores(t
@@ -44,8 +44,9 @@ export default function AjustesSueldo() {
     cuerpo.jornadas = [];
     for (const j of jornadas) {
       const v = aCent(porJornada[j.id]?.base);
-      if (v === null) return setError('Revisá los importes: solo números, con coma para los decimales.');
-      if (v > 0) cuerpo.jornadas.push({ jornadaId: j.id, modo: porJornada[j.id].modo, base: v });
+      const dom = aCent(porJornada[j.id]?.domingo);
+      if (v === null || dom === null) return setError('Revisá los importes: solo números, con coma para los decimales.');
+      if (v > 0 || dom > 0) cuerpo.jornadas.push({ jornadaId: j.id, modo: porJornada[j.id].modo, base: v, domingo: dom, domingoPor: porJornada[j.id].domingoPor });
     }
     try {
       await pedir('/sueldo', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
@@ -63,7 +64,7 @@ export default function AjustesSueldo() {
         <>
           <p className="paso">Lo que cobrás en cada jornada</p>
           {jornadas.map((j) => {
-            const v = porJornada[j.id] || { modo: 'mensual', base: '' };
+            const v = porJornada[j.id] || { modo: 'mensual', base: '', domingo: '', domingoPor: 'dia' };
             const cambiar = (x) => { setPorJornada({ ...porJornada, [j.id]: { ...v, ...x } }); setAviso(''); };
             return (
               <div key={j.id} className="tarifa-jornada">
@@ -76,6 +77,18 @@ export default function AjustesSueldo() {
                 <label>{v.modo === 'mensual' ? 'Bruto mensual en esta jornada' : 'Precio por hora'}
                   <span className="campo-unidad"><input inputMode="decimal" value={v.base} placeholder="0,00" onChange={(e) => cambiar({ base: e.target.value })} /><span>{v.modo === 'mensual' ? '€' : '€/h'}</span></span>
                 </label>
+                {j.domingo === 'pago' && (
+                  <label>Domingo trabajado (se cobra a mes vencido)
+                    <span className="campo-unidad">
+                      <input inputMode="decimal" value={v.domingo} placeholder="Si no lo sabés, dejalo vacío" onChange={(e) => cambiar({ domingo: e.target.value })} />
+                      <select className="unidad" value={v.domingoPor} onChange={(e) => cambiar({ domingoPor: e.target.value })}>
+                        <option value="dia">€/domingo</option>
+                        <option value="hora">€/h</option>
+                      </select>
+                    </span>
+                  </label>
+                )}
+                {j.domingo === 'libres' && <p className="tenue letra-chica">Domingos: te dan {String(j.domingoDias).replace('.5', '½')} día(s) libre(s); suman a tus días compensatorios.</p>}
               </div>
             );
           })}

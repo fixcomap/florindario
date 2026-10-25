@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { pedir } from '../api.js';
-import { DIAS_CORTOS, desdeIso, hoy, nombreMes, semanasDelMes } from '../fechas.js';
+import { DIAS_CORTOS, desdeIso, hoy, iso, nombreMes, semanasDelMes } from '../fechas.js';
 import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
 import { agrupar } from '../notas.js';
 import { saldoEnDias, sumaEnDias } from '../jornadas.js';
@@ -14,6 +14,15 @@ import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 // Mes de lunes a domingo: cada día con su tipo y su horario, las horas de cada
 // semana a la derecha y el total del mes abajo. Tocar un día lo edita; en modo
 // "Elegir días" se marcan varios (o semanas enteras) y se cargan de una vez.
+const MESES_NOMBRE = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// Minutos de días libres que genera un domingo trabajado en una jornada que los devuelve (0 si no).
+function domingoLibre(d, jornadas) {
+  if (d?.tipo !== 'trabajo' || desdeIso(d.fecha).getDay() !== 0) return 0;
+  const j = jornadas.find((x) => x.id === d.jornadaId);
+  return j?.domingo === 'libres' ? Math.round(j.domingoDias * j.minutosDia) : 0;
+}
+
 export default function Calendario({ usuario }) {
   const modoBolsa = usuario?.bolsa || 'jornadas';
   const ahora = new Date();
@@ -28,6 +37,7 @@ export default function Calendario({ usuario }) {
   const [extras, setExtras] = useState(null);
   const [notas, setNotas] = useState([]);
   const [tarifas, setTarifas] = useState(undefined);
+  const [diasAnterior, setDiasAnterior] = useState([]);
   const cargarExtras = () => pedir('/extras').then(setExtras).catch(() => {});
   useEffect(() => { cargarExtras(); }, []);
 
@@ -41,6 +51,15 @@ export default function Calendario({ usuario }) {
       .catch((err) => setError(err.message));
   }, [desde, hasta]);
   useEffect(cargar, [cargar]);
+  // Mes anterior: sus domingos pagados a mes vencido entran en el sueldo de este mes.
+  const anterior = new Date(mes.anio, mes.mes - 1, 1);
+  const mesAnterior = MESES_NOMBRE[anterior.getMonth()];
+  const desdeAnterior = iso(anterior);
+  const hastaAnterior = iso(new Date(mes.anio, mes.mes, 0));
+  useEffect(() => {
+    if (!tarifas) return;
+    pedir(`/dias?desde=${desdeAnterior}&hasta=${hastaAnterior}`).then(setDiasAnterior).catch(() => setDiasAnterior([]));
+  }, [tarifas, desdeAnterior, hastaAnterior]);
   const claveMes = `${mes.anio}-${String(mes.mes + 1).padStart(2, '0')}`;
   const cargarNotas = useCallback(() => {
     pedir(`/notas?desde=${desde}&hasta=${hasta}&mes=${claveMes}`).then(setNotas).catch((err) => setError(err.message));
@@ -126,7 +145,7 @@ export default function Calendario({ usuario }) {
 
       <p className="total-mes">Este mes: <strong>{horas(totalMes)}</strong></p>
 
-      {(extraMes.pagadas > 0 || extraMes.bolsa > 0 || usadasMes > 0 || extras?.bolsa.saldo) ? (
+      {(extraMes.pagadas > 0 || extraMes.bolsa > 0 || usadasMes > 0 || extras?.bolsa.saldo || delMesCargados.some((d) => domingoLibre(d, jornadas))) ? (
         <section className="panel-extra">
           <h2>Horas extra</h2>
           {extraMes.pagadas > 0 && (
@@ -134,9 +153,12 @@ export default function Calendario({ usuario }) {
               {extraMes.sinCobrar > 0 ? <> · <span className="aviso">{horas(extraMes.sinCobrar)} sin cobrar</span> <button className="enlace" onClick={cobrarMes}>Ya las cobré</button></> : ' · cobradas ✓'}
             </p>
           )}
-          {modoBolsa !== 'ninguna' && (extraMes.bolsa > 0 || usadasMes > 0) && (
+          {modoBolsa !== 'ninguna' && (extraMes.bolsa > 0 || usadasMes > 0 || delMesCargados.some((d) => domingoLibre(d, jornadas))) && (
             modoBolsa === 'jornadas' && jornadas.length ? (
-              <p>🗓 Días compensatorios este mes: <strong>{sumaEnDias(delMesCargados.filter((d) => d.extra?.pago === 'horas').map((d) => d.extra), jornadas) || '—'}</strong>
+              <p>🗓 Días compensatorios este mes: <strong>{sumaEnDias([
+                ...delMesCargados.filter((d) => d.extra?.pago === 'horas').map((d) => d.extra),
+                ...delMesCargados.filter((d) => domingoLibre(d, jornadas)).map((d) => ({ minutos: domingoLibre(d, jornadas), jornadaId: d.jornadaId })),
+              ], jornadas) || '—'}</strong>
                 {usadasMes > 0 && <> · devueltos {sumaEnDias(delMesCargados.filter((d) => d.compensa).map((d) => ({ minutos: d.compensa, jornadaId: d.compensaJornadaId })), jornadas)}</>}</p>
             ) : (
               <p>🕒 A libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · devueltas {horas(usadasMes)}</>}</p>
@@ -150,7 +172,7 @@ export default function Calendario({ usuario }) {
       ) : null}
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
 
-      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} />}
+      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} diasAnterior={diasAnterior} mesAnterior={mesAnterior} />}
 
       <ul className="leyenda">
         {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}
@@ -212,6 +234,12 @@ function Semana({ semana, dias, delMes, tocar, notasPorFecha, modoBolsa, jornada
               </span>
             )}
             {minutosDelDia(d) > 0 && <span className="horas-dia">{horasCortas(minutosDelDia(d))}</span>}
+            {!d?.extra && domingoLibre(d, jornadas) > 0 && (
+              <span className="marca-extra horas">+{String(domingoLibre(d, jornadas) / jornadas.find((j) => j.id === d.jornadaId).minutosDia).replace('.5', ',5')}d</span>
+            )}
+            {d?.tipo === 'trabajo' && desdeIso(f).getDay() === 0 && jornadas.find((j) => j.id === d.jornadaId)?.domingo === 'pago' && (
+              <span className="marca-domingo" title="Domingo pagado a mes vencido">€</span>
+            )}
             {d?.extra && (
               <span className={`marca-extra ${d.extra.pago}${d.extra.pago === 'dinero' && !d.extra.cobrada ? ' pendiente' : ''}`}>
                 +{modoBolsa === 'jornadas' && d.extra.pago === 'horas' && jornadas.find((j) => j.id === d.extra.jornadaId)

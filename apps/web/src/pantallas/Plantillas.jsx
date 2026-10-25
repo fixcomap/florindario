@@ -113,11 +113,13 @@ export default function Plantillas() {
 function EditorJornada({ inicial, cerrar }) {
   const [nombre, setNombre] = useState(inicial.nombre);
   const [minutosDia, setMinutosDia] = useState(inicial.minutosDia);
+  const [domingo, setDomingo] = useState(inicial.domingo || 'normal');
+  const [domingoDias, setDomingoDias] = useState(Number(inicial.domingoDias) || 1);
   const [error, setError] = useState('');
 
   const hacer = (fn) => fn().then(cerrar).catch((err) => setError(err.message));
   const guardar = () => hacer(() => pedir(inicial.id ? `/jornadas/${inicial.id}` : '/jornadas', {
-    method: inicial.id ? 'PUT' : 'POST', headers: JSON_, body: JSON.stringify({ nombre, minutosDia }),
+    method: inicial.id ? 'PUT' : 'POST', headers: JSON_, body: JSON.stringify({ nombre, minutosDia, domingo, domingoDias }),
   }));
   const borrar = () => window.confirm(`¿Borrar «${inicial.nombre}»? Sus plantillas quedan sin jornada.`)
     && hacer(() => pedir(`/jornadas/${inicial.id}`, { method: 'DELETE' }));
@@ -128,6 +130,20 @@ function EditorJornada({ inicial, cerrar }) {
       <label>Nombre<input value={nombre} maxLength={40} placeholder="Ej.: Jornada 20 h" onChange={(e) => setNombre(e.target.value)} /></label>
       <Duracion etiqueta="Un día de trabajo dura" valor={minutosDia} cambiar={setMinutosDia} />
       <p className="tenue">Se usa para proponer los turnos y para contar las extras en jornadas.</p>
+      <p className="paso">Si trabajás un domingo en esta jornada</p>
+      {[['normal', 'Nada especial'], ['libres', 'Me dan días libres'], ['pago', 'Me lo pagan (a mes vencido)']].map(([id, texto]) => (
+        <label key={id} className="opcion">
+          <input type="radio" name="domingo" checked={domingo === id} onChange={() => setDomingo(id)} />
+          <span><strong>{texto}</strong>{id === 'pago' && <small>Aparece en el sueldo del mes siguiente; el importe va en Cuenta → Sueldo.</small>}</span>
+        </label>
+      ))}
+      {domingo === 'libres' && (
+        <div className="contador">
+          <button type="button" aria-label="Menos" disabled={domingoDias <= 0.5} onClick={() => setDomingoDias(domingoDias - 0.5)}>−</button>
+          <span><strong>{String(domingoDias).replace('.5', '½').replace(/^0½/, '½')} {domingoDias > 1 ? 'días' : 'día'}</strong> libre por domingo</span>
+          <button type="button" aria-label="Más" disabled={domingoDias >= 5} onClick={() => setDomingoDias(domingoDias + 0.5)}>+</button>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
       <div className="acciones">
         <button className="boton" onClick={guardar}>Guardar jornada</button>

@@ -272,3 +272,5 @@ details.sueldo summary span::after { content: ' ▾'; }
 details.sueldo[open] summary { margin-bottom: 8px; }
 details.sueldo[open] summary span { font-size: 0; }
 details.sueldo[open] summary span::after { content: '▴'; font-size: 0.9rem; }
+select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); color: var(--tinta); font-size: 0.85rem; }
+.marca-domingo { position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; font-size: 0.6rem; font-weight: 700; color: #fff; background: #c98a12; }

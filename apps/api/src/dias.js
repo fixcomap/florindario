@@ -112,9 +112,19 @@ router.get('/extras', manejar(async (req, res) => {
        SELECT extra_jornada_id AS jornada_id, extra_minutos AS generadas, 0 AS usadas FROM dias WHERE usuario_id = $1 AND extra_pago = 'horas'
        UNION ALL
        SELECT compensa_jornada_id, 0, compensa_minutos FROM dias WHERE usuario_id = $1 AND tipo = 'compensado'
+       UNION ALL
+       SELECT j.id, j.domingo_medios * j.minutos_dia / 2, 0 FROM dias d JOIN jornadas j ON j.id = d.jornada_id
+       WHERE d.usuario_id = $1 AND d.tipo = 'trabajo' AND extract(isodow FROM d.fecha) = 7 AND j.domingo = 'libres'
      ) x GROUP BY jornada_id`,
     [req.usuario.id]
   );
+  // Domingos trabajados en jornadas que los devuelven en días: suman a la bolsa.
+  const { rows: [{ domingos }] } = await pool.query(
+    `SELECT coalesce(sum(j.domingo_medios * j.minutos_dia / 2), 0)::int AS domingos FROM dias d JOIN jornadas j ON j.id = d.jornada_id
+     WHERE d.usuario_id = $1 AND d.tipo = 'trabajo' AND extract(isodow FROM d.fecha) = 7 AND j.domingo = 'libres'`,
+    [req.usuario.id]
+  );
+  r.bolsa_generadas += domingos;
   res.json({
     porJornada,
     dinero: { sinCobrar: r.sin_cobrar, cobradas: r.cobradas },
