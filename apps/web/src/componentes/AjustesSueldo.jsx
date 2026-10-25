@@ -13,11 +13,20 @@ const CAMPOS = [
 // Tarifas para estimar el sueldo del mes: se cargan a mano, mirando una nómina.
 export default function AjustesSueldo() {
   const [valores, setValores] = useState(null);
+  const [jornadas, setJornadas] = useState([]);
+  const [porJornada, setPorJornada] = useState({}); // jornadaId -> { modo, base (texto) }
   const [aviso, setAviso] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    pedir('/sueldo').then((t) => setValores(t
+    Promise.all([pedir('/sueldo'), pedir('/jornadas')]).then(([t, js]) => {
+      setJornadas(js);
+      setPorJornada(Object.fromEntries(js.map((j) => {
+        const x = t?.jornadas?.find((y) => y.jornadaId === j.id);
+        return [j.id, { modo: x?.modo || 'mensual', base: deCent(x?.base) }];
+      })));
+      return t;
+    }).then((t) => setValores(t
       ? { modo: t.modo, ...Object.fromEntries(['base', ...CAMPOS.map(([c]) => c)].map((c) => [c, deCent(t[c])])) }
       : { modo: 'mensual', base: '', extra: '', nocturna: '', domingo: '', irpf: '', ss: '' })).catch((err) => setError(err.message));
   }, []);
@@ -32,6 +41,12 @@ export default function AjustesSueldo() {
       if (v === null) return setError('Revisá los importes: solo números, con coma para los decimales.');
       cuerpo[c] = v;
     }
+    cuerpo.jornadas = [];
+    for (const j of jornadas) {
+      const v = aCent(porJornada[j.id]?.base);
+      if (v === null) return setError('Revisá los importes: solo números, con coma para los decimales.');
+      if (v > 0) cuerpo.jornadas.push({ jornadaId: j.id, modo: porJornada[j.id].modo, base: v });
+    }
     try {
       await pedir('/sueldo', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
       setAviso('Guardado ✓');
@@ -44,15 +59,41 @@ export default function AjustesSueldo() {
     <section className="ajustes">
       <h2>Sueldo</h2>
       <p className="tenue">Para estimar cuánto cobrás cada mes según tu calendario. Copiá los datos de una nómina; es una estimación, no sustituye a la nómina.</p>
-      <div className="tipos">
-        {[['mensual', 'Sueldo fijo al mes'], ['hora', 'Cobro por hora']].map(([id, texto]) => (
-          <button key={id} type="button" className={valores.modo === id ? 'activo' : ''} aria-pressed={valores.modo === id} onClick={() => poner('modo', id)}>{texto}</button>
-        ))}
-      </div>
+      {jornadas.length > 0 ? (
+        <>
+          <p className="paso">Lo que cobrás en cada jornada</p>
+          {jornadas.map((j) => {
+            const v = porJornada[j.id] || { modo: 'mensual', base: '' };
+            const cambiar = (x) => { setPorJornada({ ...porJornada, [j.id]: { ...v, ...x } }); setAviso(''); };
+            return (
+              <div key={j.id} className="tarifa-jornada">
+                <strong>{j.nombre}</strong>
+                <div className="tipos">
+                  {[['mensual', 'Fijo al mes'], ['hora', 'Por hora']].map(([id, texto]) => (
+                    <button key={id} type="button" className={v.modo === id ? 'activo' : ''} aria-pressed={v.modo === id} onClick={() => cambiar({ modo: id })}>{texto}</button>
+                  ))}
+                </div>
+                <label>{v.modo === 'mensual' ? 'Bruto mensual en esta jornada' : 'Precio por hora'}
+                  <span className="campo-unidad"><input inputMode="decimal" value={v.base} placeholder="0,00" onChange={(e) => cambiar({ base: e.target.value })} /><span>{v.modo === 'mensual' ? '€' : '€/h'}</span></span>
+                </label>
+              </div>
+            );
+          })}
+          <p className="tenue letra-chica">En un mes mixto, el sueldo fijo de cada jornada se reparte según los días trabajados en ella.</p>
+        </>
+      ) : (
+        <div className="tipos">
+          {[['mensual', 'Sueldo fijo al mes'], ['hora', 'Cobro por hora']].map(([id, texto]) => (
+            <button key={id} type="button" className={valores.modo === id ? 'activo' : ''} aria-pressed={valores.modo === id} onClick={() => poner('modo', id)}>{texto}</button>
+          ))}
+        </div>
+      )}
       <div className="campos-sueldo">
-        <label>{valores.modo === 'mensual' ? 'Bruto mensual' : 'Precio por hora'}
-          <span className="campo-unidad"><input inputMode="decimal" value={valores.base} placeholder="0,00" onChange={(e) => poner('base', e.target.value)} /><span>{valores.modo === 'mensual' ? '€' : '€/h'}</span></span>
-        </label>
+        {!jornadas.length && (
+          <label>{valores.modo === 'mensual' ? 'Bruto mensual' : 'Precio por hora'}
+            <span className="campo-unidad"><input inputMode="decimal" value={valores.base} placeholder="0,00" onChange={(e) => poner('base', e.target.value)} /><span>{valores.modo === 'mensual' ? '€' : '€/h'}</span></span>
+          </label>
+        )}
         {CAMPOS.map(([c, etiqueta, unidad]) => (
           <label key={c}>{etiqueta}
             <span className="campo-unidad"><input inputMode="decimal" value={valores[c]} placeholder={unidad === '%' ? '0' : '0,00'} onChange={(e) => poner(c, e.target.value)} /><span>{unidad}</span></span>

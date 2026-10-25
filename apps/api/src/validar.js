@@ -75,6 +75,7 @@ function dia(body) {
     if (!['dinero', 'horas'].includes(body.extra.pago)) throw new ErrorValidacion('horas extra: elegí si se pagan o van a horas libres');
     d.extra = { minutos: m, pago: body.extra.pago, cobrada: body.extra.pago === 'dinero' && body.extra.cobrada === true, jornadaId: idJornada(body.extra.jornadaId) };
   }
+  d.jornadaId = d.tipo === 'trabajo' ? idJornada(body.jornadaId) : null;
   d.compensaJornadaId = null;
   if (d.tipo === 'compensado') {
     d.compensa = minutos(body.compensa, 'horas libres usadas', 15);
