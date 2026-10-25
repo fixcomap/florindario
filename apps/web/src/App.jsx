@@ -35,7 +35,7 @@ export default function App() {
           {usuario?.estado === 'suspendida' && (
             <p className="centro">Tu cuenta está suspendida por actividad anómala. Escribinos a contacto@fixcomap.com.</p>
           )}
-          {usuario?.estado === 'activa' && (ruta === '/cuenta' ? <Cuenta usuario={usuario} /> : ruta === '/plantillas' ? <Plantillas /> : <Calendario />)}
+          {usuario?.estado === 'activa' && (ruta === '/cuenta' ? <Cuenta usuario={usuario} cambiar={setUsuario} /> : ruta === '/plantillas' ? <Plantillas /> : <Calendario usuario={usuario} />)}
         </>
       )}
     </div>

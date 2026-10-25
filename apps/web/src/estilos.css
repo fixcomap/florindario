@@ -214,3 +214,20 @@ main.con-barra { padding-bottom: 90px; }
 .dia { min-width: 0; overflow: hidden; }
 .dia .contenido span { overflow: hidden; text-overflow: clip; }
 .dia .contenido span { white-space: normal; overflow-wrap: anywhere; }
+
+/* ---------- jornadas ---------- */
+.jornada { margin: 14px 0; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 16px; background: var(--panel); }
+.jornada header { display: flex; justify-content: space-between; align-items: flex-start; }
+.jornada h2 { margin: 0 !important; }
+.jornada .bases { margin-top: 6px; }
+.jornada.vacia { background: #fdf0f4; border-color: #f2cfdb; }
+.select { display: block; width: 100%; margin-top: 4px; padding: 11px; font-size: 1rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--tinta); }
+.selector-jornada { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+.selector-jornada button { flex: none; padding: 8px 14px; border: 1.5px solid var(--borde); border-radius: 999px; background: var(--fondo); color: var(--tinta); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.selector-jornada button.activo { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+.paso { margin: 0 0 6px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--tenue); }
+.ajustes { margin: 18px 0; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 16px; background: var(--panel); }
+.ajustes h2 { margin: 0 0 4px; font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; }
+.opcion { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; color: var(--tinta); font-size: 0.95rem; }
+.opcion input { width: auto; margin-top: 3px; }
+.opcion small { display: block; color: var(--tenue); }
