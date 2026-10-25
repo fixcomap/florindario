@@ -140,7 +140,7 @@ export default function Calendario() {
 
       {hoja?.tipo === 'editar' && (
         <EditorDia fechas={hoja.fechas} dia={hoja.fechas.length === 1 ? dias[hoja.fechas[0]] : undefined}
-          bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado} />
+          plantillas={plantillas} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado} />
       )}
       {hoja?.tipo === 'plantilla' && (
         <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} cerrar={() => setHoja(null)} guardado={guardado} />
