@@ -50,6 +50,7 @@ function Bienvenida() {
       <h1>Tu calendario de turnos</h1>
       <p>Cargá tus jornadas de mañana, tarde o noche, tus libres y vacaciones, y mirá cuántas horas suma cada semana.</p>
       {error === 'login' && <p className="error">No se pudo entrar con Google. Probá de nuevo.</p>}
+      {error === 'acceso' && <p className="error">Este entorno es privado: tu cuenta no tiene acceso.</p>}
       {error === 'altas' && <p className="error">Ahora mismo hay muchas altas nuevas. Probá de nuevo en un rato.</p>}
       <a className="boton" href={`${URL_API}/auth/login`}>Entrar con Google</a>
       <p className="legal-pie"><a href="/terminos">Términos</a> · <a href="/privacidad">Privacidad</a></p>
