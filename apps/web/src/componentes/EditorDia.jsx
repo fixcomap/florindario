@@ -5,7 +5,8 @@ import { TIPOS } from '../datos/tipos.js';
 import Tramos from './Tramos.jsx';
 import Duracion from './Duracion.jsx';
 import { horas, minutosDelDia, tramoCorto } from '../horas.js';
-import { enDias, saldoEnDias } from '../jornadas.js';
+import { saldoEnDias } from '../jornadas.js';
+import CantidadDias from './CantidadDias.jsx';
 
 const TRAMO = { inicio: '09:00', fin: '13:00' };
 const SIN_HORARIO = TIPOS.filter((t) => t.id !== 'trabajo');
@@ -27,7 +28,7 @@ function turnosDePlantillas(plantillas, fecha) {
 // Hoja inferior para cargar uno o varios días con lo mismo: tipo, tramos, horas
 // extra (pagadas o a la bolsa de horas libres), horas de bolsa usadas y nota.
 // modoBolsa: 'horas' (bolsa de horas), 'jornadas' (se devuelven por jornadas) o 'ninguna' (solo se pagan).
-export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [], modoBolsa = 'horas', bolsa, cerrar, guardado, notas, notasCambiadas }) {
+export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [], modoBolsa = 'jornadas', bolsa, cerrar, guardado, notas, notasCambiadas }) {
   const todos = turnosDePlantillas(plantillas, fechas[0]);
   // Paso 1: la jornada (solo las que tienen turnos; "Sin jornada" si hay plantillas sueltas).
   const grupos = [
@@ -146,7 +147,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
             {extra && (
               <>
                 {modoBolsa !== 'ninguna' && <div className="tipos">
-                  {[['dinero', '💶 Me las pagan'], ['horas', enJornadas ? '🕒 Me devuelven el día' : '🕒 Horas libres']].map(([id, texto]) => (
+                  {[['dinero', '💶 Me las pagan'], ['horas', enJornadas ? '🗓 Días compensatorios' : '🕒 Horas libres']].map(([id, texto]) => (
                     <button key={id} type="button" className={extra.pago === id ? 'activo' : ''} aria-pressed={extra.pago === id}
                       onClick={() => setExtra({
                         ...extra, pago: id, cobrada: id === 'dinero' && extra.cobrada,
@@ -154,26 +155,11 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
                       })}>{texto}</button>
                   ))}
                 </div>}
+                {modoBolsa === 'jornadas' && !jornadas.length && extra.pago === 'horas' && (
+                  <p className="tenue pista">Creá tus jornadas en <a href="/plantillas">Plantillas</a> para contarlos en días compensatorios.</p>
+                )}
                 {extraEnDias ? (
-                  <>
-                    {jornadas.length > 1 && (
-                      <div className="selector-jornada">
-                        {jornadas.map((j) => (
-                          <button key={j.id} type="button" className={j === jornadaExtra ? 'activo' : ''}
-                            onClick={() => setExtra({ ...extra, jornadaId: j.id, minutos: Math.round((extra.minutos / jornadaExtra.minutosDia) * j.minutosDia) })}>{j.nombre}</button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="selector-jornada">
-                      {[0.5, 1, 2].map((n) => (
-                        <button key={n} type="button" className={extra.minutos === Math.round(n * jornadaExtra.minutosDia) ? 'activo' : ''}
-                          onClick={() => setExtra({ ...extra, jornadaId: jornadaExtra.id, minutos: Math.round(n * jornadaExtra.minutosDia) })}>
-                          {n === 0.5 ? '½ día' : n === 1 ? '1 día' : '2 días'}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="tenue">Te devuelven: <strong>{enDias(extra.minutos, jornadaExtra)}</strong></p>
-                  </>
+                  <CantidadDias jornadas={jornadas} jornada={jornadaExtra} minutos={extra.minutos} cambiar={(v) => setExtra({ ...extra, ...v })} />
                 ) : (
                   <div className="fila-extra">
                     <Duracion etiqueta="¿Cuántas?" valor={extra.minutos} cambiar={(minutos) => setExtra({ ...extra, minutos })} />
@@ -193,22 +179,9 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
           <div className="extra">
             {enJornadas ? (
               <>
-                <p className="paso">¿Qué te devuelven?</p>
-                {jornadas.length > 1 && (
-                  <div className="selector-jornada">
-                    {jornadas.map((j) => (
-                      <button key={j.id} type="button" className={j === compensaJornada ? 'activo' : ''}
-                        onClick={() => { setCompensaJornadaId(j.id); setCompensa(Math.round((compensa / compensaJornada.minutosDia) * j.minutosDia)); }}>{j.nombre}</button>
-                    ))}
-                  </div>
-                )}
-                <div className="selector-jornada">
-                  {[0.5, 1, 2].map((n) => (
-                    <button key={n} type="button" className={compensa === Math.round(n * compensaJornada.minutosDia) ? 'activo' : ''}
-                      onClick={() => setCompensa(Math.round(n * compensaJornada.minutosDia))}>{n === 0.5 ? '½ día' : n === 1 ? '1 día' : '2 días'}</button>
-                  ))}
-                </div>
-                <p className="tenue">Usás: <strong>{enDias(compensa, compensaJornada)}</strong></p>
+                <p className="paso">Días compensatorios que usás</p>
+                <CantidadDias jornadas={jornadas} jornada={compensaJornada} minutos={compensa}
+                  cambiar={({ minutos, jornadaId }) => { setCompensa(minutos); setCompensaJornadaId(jornadaId); }} />
               </>
             ) : (
               <Duracion etiqueta="Horas libres que usás" valor={compensa} cambiar={setCompensa} />

@@ -3,10 +3,10 @@ import { horas } from './horas.js';
 const num = (x) => String(Math.round(x * 10) / 10).replace('.', ',');
 const porId = (jornadas, id) => jornadas.find((j) => j.id === id);
 
-// 240 minutos en una jornada de 4 h -> "1 día de Jornada 20 h".
+// 240 minutos en una jornada de 4 h -> "1 día en Jornada 20 h".
 export function enDias(minutos, j) {
   const n = minutos / j.minutosDia;
-  return `${num(n)} ${num(n) === '1' ? 'día' : 'días'} de ${j.nombre}`;
+  return `${num(n)} ${n > 1 ? 'días' : 'día'} en ${j.nombre}`;
 }
 
 // [{ minutos, jornadaId }] -> "1 día de Jornada 20 h · 2 días de Jornada 40 h" (sin jornada, en horas).

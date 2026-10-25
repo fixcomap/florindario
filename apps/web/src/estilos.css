@@ -239,3 +239,10 @@ main.con-barra { padding-bottom: 90px; }
 .pin { position: absolute; top: -9px; right: -6px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 1rem; cursor: pointer; filter: grayscale(1); opacity: 0.35; transform: rotate(20deg); }
 .pin[aria-pressed="true"] { top: -12px; left: 50%; right: auto; transform: translateX(-50%) rotate(10deg); filter: none; opacity: 1; font-size: 1.3rem; }
 .fijar { margin-top: 10px; }
+
+/* ---------- días compensatorios ---------- */
+.cantidad-dias { margin-top: 8px; }
+.contador { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px; border: 1px solid var(--borde); border-radius: 999px; background: var(--panel); }
+.contador span { text-align: center; font-size: 0.95rem; }
+.contador button { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: #fdf0f4; color: var(--acento); font-size: 1.4rem; font-weight: 700; cursor: pointer; }
+.contador button:disabled { opacity: 0.35; }
