@@ -5,6 +5,7 @@ import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
 import { agrupar } from '../notas.js';
 import { saldoEnDias, sumaEnDias } from '../jornadas.js';
 import Tablero from '../componentes/Tablero.jsx';
+import SueldoMes from '../componentes/SueldoMes.jsx';
 import HojaNota from '../componentes/HojaNota.jsx';
 import { TIPOS, tipo } from '../datos/tipos.js';
 import EditorDia from '../componentes/EditorDia.jsx';
@@ -26,6 +27,7 @@ export default function Calendario({ usuario }) {
   const [error, setError] = useState('');
   const [extras, setExtras] = useState(null);
   const [notas, setNotas] = useState([]);
+  const [tarifas, setTarifas] = useState(undefined);
   const cargarExtras = () => pedir('/extras').then(setExtras).catch(() => {});
   useEffect(() => { cargarExtras(); }, []);
 
@@ -52,6 +54,7 @@ export default function Calendario({ usuario }) {
   useEffect(() => {
     pedir('/plantillas').then(setPlantillas).catch(() => {});
     pedir('/jornadas').then(setJornadas).catch(() => {});
+    pedir('/sueldo').then(setTarifas).catch(() => setTarifas(null));
   }, []);
 
   const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
@@ -145,6 +148,8 @@ export default function Calendario({ usuario }) {
           {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
       ) : null}
+      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} />}
+
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
 
       <ul className="leyenda">

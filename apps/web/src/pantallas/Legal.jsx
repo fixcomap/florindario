@@ -1,5 +1,5 @@
 // BORRADOR: revisar antes de abrir la app al público. El titular responde de estos textos.
-const ACTUALIZADO = '24 de octubre de 2026';
+const ACTUALIZADO = '25 de octubre de 2026';
 
 export function Terminos() {
   return (
@@ -26,7 +26,7 @@ export function Privacidad() {
       <h1>Política de privacidad</h1>
       <p className="tenue">Última actualización: {ACTUALIZADO}</p>
       <h2>Qué datos guardamos</h2>
-      <p>De tu cuenta de Google: tu email y tu nombre. Lo que cargás: tu calendario (turnos, horarios, notas) y tus semanas tipo.</p>
+      <p>De tu cuenta de Google: tu email y tu nombre. Lo que cargás: tu calendario (turnos, horarios, notas), tus jornadas y plantillas y, si querés, las tarifas de tu sueldo (importes y porcentajes) para estimar cuánto cobrás. No pedimos ni guardamos nóminas, DNI, número de la Seguridad Social ni cuentas bancarias.</p>
       <h2>Para qué</h2>
       <p>Solo para que puedas usar Florindario. No los vendemos, no hacemos publicidad ni los compartimos con terceros salvo los proveedores que alojan el servicio.</p>
       <h2>Dónde</h2>
