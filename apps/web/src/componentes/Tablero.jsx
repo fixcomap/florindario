@@ -16,8 +16,8 @@ export default function Tablero({ grupos, mes, cambiado }) {
               <span className="postit-texto">{g.texto}</span>
               <span className="postit-dias">{g.fechas.length ? `📅 ${fechasTexto(g.fechas)}` : '🗒 General'}{g.general && g.fechas.length ? ' · y general' : ''}</span>
             </button>
-            <button className="pin" aria-pressed={g.fijada} aria-label={g.fijada ? 'Desfijar' : 'Fijar en todos los meses'} title={g.fijada ? 'Desfijar' : 'Fijar en todos los meses'}
-              onClick={() => Promise.all(g.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fijada: !g.fijada }) }))).then(cambiado)}>📌</button>
+            <button className="pin" aria-pressed={g.fijada} aria-label={g.fijada ? 'Quitar el pin desde este mes' : 'Fijar en los meses siguientes'} title={g.fijada ? 'Quitar el pin desde este mes' : 'Fijar en los meses siguientes'}
+              onClick={() => Promise.all(g.ids.map((id) => pedir(`/notas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fijada: !g.fijada, mes }) }))).then(cambiado)}>📌</button>
           </div>
         ))}
         <button className="postit nuevo" onClick={() => setHoja({ nueva: true })}>+ Nota</button>
