@@ -1,18 +1,42 @@
 import { useState } from 'react';
 import { pedir } from '../api.js';
-import { diaLargo } from '../fechas.js';
+import { desdeIso, diaLargo } from '../fechas.js';
+import { TIPOS } from '../datos/tipos.js';
 import Tramos from './Tramos.jsx';
-import TiposDia from './TiposDia.jsx';
 import Duracion from './Duracion.jsx';
-import { horas, minutosDelDia } from '../horas.js';
+import { horas, minutosDelDia, tramoCorto } from '../horas.js';
 
 const TRAMO = { inicio: '09:00', fin: '13:00' };
+const SIN_HORARIO = TIPOS.filter((t) => t.id !== 'trabajo');
+const clave = (tramos) => tramos.map((t) => `${t.inicio}-${t.fin}`).join(',');
+
+// Turnos que ofrecen las plantillas para ese día de la semana (o, si ese día no
+// trabaja, el primer día de trabajo de la plantilla); sin repetir horarios.
+function turnosDePlantillas(plantillas, fecha) {
+  const dia = (desdeIso(fecha).getDay() + 6) % 7;
+  const vistos = new Set();
+  return plantillas.flatMap((p) => {
+    const d = p.dias[dia]?.tipo === 'trabajo' ? p.dias[dia] : p.dias.find((x) => x?.tipo === 'trabajo');
+    if (!d || vistos.has(clave(d.tramos))) return [];
+    vistos.add(clave(d.tramos));
+    return [{ id: p.id, nombre: p.nombre, tramos: d.tramos }];
+  });
+}
 
 // Hoja inferior para cargar uno o varios días con lo mismo: tipo, tramos, horas
 // extra (pagadas o a la bolsa de horas libres), horas de bolsa usadas y nota.
-export default function EditorDia({ fechas, dia, bolsa, cerrar, guardado }) {
-  const [tipoDia, setTipoDia] = useState(dia?.tipo || 'trabajo');
-  const [tramos, setTramos] = useState(dia?.tramos?.length ? dia.tramos : [TRAMO]);
+export default function EditorDia({ fechas, dia, plantillas = [], bolsa, cerrar, guardado }) {
+  const turnos = turnosDePlantillas(plantillas, fechas[0]);
+  // Elección: 'p:<id>' (turno de plantilla), 'otro' (horario a mano) o un tipo sin horario.
+  const [eleccion, setEleccion] = useState(() => {
+    if (dia && dia.tipo !== 'trabajo') return dia.tipo;
+    if (dia) return turnos.find((t) => clave(t.tramos) === clave(dia.tramos)) ? `p:${turnos.find((t) => clave(t.tramos) === clave(dia.tramos)).id}` : 'otro';
+    return turnos.length ? `p:${turnos[0].id}` : 'otro';
+  });
+  const turno = turnos.find((t) => `p:${t.id}` === eleccion);
+  const tipoDia = turno || eleccion === 'otro' ? 'trabajo' : eleccion;
+  const [propios, setPropios] = useState(dia?.tipo === 'trabajo' ? dia.tramos : [TRAMO]);
+  const tramos = turno ? turno.tramos : propios;
   const [nota, setNota] = useState(dia?.nota || '');
   const [extra, setExtra] = useState(dia?.extra || null);
   const [compensa, setCompensa] = useState(dia?.compensa || 480);
@@ -52,8 +76,28 @@ export default function EditorDia({ fechas, dia, bolsa, cerrar, guardado }) {
     <div className="fondo-hoja" onClick={cerrar}>
       <section className="hoja" role="dialog" aria-label={`Editar ${titulo}`} onClick={(e) => e.stopPropagation()}>
         <h2>{titulo}</h2>
-        <TiposDia valor={tipoDia} cambiar={setTipoDia} />
-        {tipoDia === 'trabajo' && <Tramos tramos={tramos} cambiar={setTramos} />}
+        <div className="turnos">
+          {turnos.map((t) => (
+            <button key={t.id} type="button" className={`turno${eleccion === `p:${t.id}` ? ' activo' : ''}`} aria-pressed={eleccion === `p:${t.id}`} onClick={() => setEleccion(`p:${t.id}`)}>
+              <strong>{t.nombre}</strong>
+              <span>{t.tramos.map(tramoCorto).join(' y ')} · {horas(minutosDelDia({ tipo: 'trabajo', tramos: t.tramos }))}</span>
+            </button>
+          ))}
+          <button type="button" className={`turno otro${eleccion === 'otro' ? ' activo' : ''}`} aria-pressed={eleccion === 'otro'} onClick={() => setEleccion('otro')}>
+            <strong>✎ Otro horario</strong>
+            <span>{eleccion === 'otro' ? 'elegí las horas abajo' : 'entrada y salida a mano'}</span>
+          </button>
+        </div>
+        {!turnos.length && <p className="tenue pista">Creá <a href="/plantillas">plantillas</a> y tus turnos aparecen acá para cargarlos con un toque.</p>}
+        {eleccion === 'otro' && <Tramos tramos={propios} cambiar={setPropios} />}
+
+        <div className="tipos sin-horario">
+          {SIN_HORARIO.map((t) => (
+            <button key={t.id} type="button" className={eleccion === t.id ? 'activo' : ''} aria-pressed={eleccion === t.id}
+              style={eleccion === t.id ? { background: t.fondo, borderColor: t.color, color: t.color } : undefined}
+              onClick={() => setEleccion(t.id)}>{t.icono} {t.nombre}</button>
+          ))}
+        </div>
 
         {tipoDia === 'trabajo' && (
           <div className="extra">

@@ -175,3 +175,17 @@ main.con-barra { padding-bottom: 90px; }
 .capsula:active { transform: scale(0.97); }
 .dia { padding-bottom: 16px; min-height: 68px; }
 .dia .contenido span { white-space: nowrap; font-size: 0.62rem; letter-spacing: -0.3px; }
+
+/* ---------- turnos de las plantillas en la hoja del día ---------- */
+.turnos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.turno { display: grid; gap: 2px; padding: 12px; text-align: left; border: 1.5px solid var(--borde); border-radius: 16px; background: var(--fondo); color: var(--tinta); font: inherit; cursor: pointer; }
+.turno strong { font-family: var(--titulo); font-weight: 600; font-size: 1.02rem; }
+.turno span { font-size: 0.82rem; color: var(--tenue); }
+.turno.activo { border-color: #5f8a66; background: #e6efe4; box-shadow: 0 0 0 2px rgba(95, 138, 102, 0.18); }
+.turno.activo span { color: #4a6f50; }
+.turno.otro { border-style: dashed; }
+.turno.otro.activo { border-style: solid; }
+.pista { font-size: 0.85rem; margin: 8px 2px 0; }
+.pista a { color: var(--acento); }
+.sin-horario { margin-top: 12px; }
+.sin-horario button { font-size: 0.85rem; padding: 7px 10px; }
