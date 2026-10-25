@@ -3,6 +3,7 @@ import { pedir } from '../api.js';
 import { DIAS_CORTOS, desdeIso, hoy, nombreMes, semanasDelMes } from '../fechas.js';
 import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
 import { agrupar } from '../notas.js';
+import { enJornadas } from '../jornadas.js';
 import Tablero from '../componentes/Tablero.jsx';
 import HojaNota from '../componentes/HojaNota.jsx';
 import { TIPOS, tipo } from '../datos/tipos.js';
@@ -12,11 +13,13 @@ import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 // Mes de lunes a domingo: cada día con su tipo y su horario, las horas de cada
 // semana a la derecha y el total del mes abajo. Tocar un día lo edita; en modo
 // "Elegir días" se marcan varios (o semanas enteras) y se cargan de una vez.
-export default function Calendario() {
+export default function Calendario({ usuario }) {
+  const modoBolsa = usuario?.bolsa || 'horas';
   const ahora = new Date();
   const [mes, setMes] = useState({ anio: ahora.getFullYear(), mes: ahora.getMonth() });
   const [dias, setDias] = useState({}); // fecha -> día
   const [plantillas, setPlantillas] = useState([]);
+  const [jornadas, setJornadas] = useState([]);
   const [eligiendo, setEligiendo] = useState(false);
   const [elegidos, setElegidos] = useState(() => new Set());
   const [hoja, setHoja] = useState(null); // { tipo: 'editar' | 'plantilla', fechas }
@@ -46,7 +49,10 @@ export default function Calendario() {
     notas.forEach((n) => n.fechas.forEach((f) => { (m[f] ||= []).push(n); }));
     return m;
   }, [notas]);
-  useEffect(() => { pedir('/plantillas').then(setPlantillas).catch(() => {}); }, []);
+  useEffect(() => {
+    pedir('/plantillas').then(setPlantillas).catch(() => {});
+    pedir('/jornadas').then(setJornadas).catch(() => {});
+  }, []);
 
   const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
@@ -125,13 +131,13 @@ export default function Calendario() {
               {extraMes.sinCobrar > 0 ? <> · <span className="aviso">{horas(extraMes.sinCobrar)} sin cobrar</span> <button className="enlace" onClick={cobrarMes}>Ya las cobré</button></> : ' · cobradas ✓'}
             </p>
           )}
-          {(extraMes.bolsa > 0 || usadasMes > 0) && (
-            <p>🕒 A horas libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · usadas {horas(usadasMes)}</>}</p>
+          {modoBolsa !== 'ninguna' && (extraMes.bolsa > 0 || usadasMes > 0) && (
+            <p>🕒 A libres este mes: <strong>{horas(extraMes.bolsa)}</strong>{usadasMes > 0 && <> · devueltas {horas(usadasMes)}</>}</p>
           )}
-          {extras && (extras.bolsa.generadas > 0 || extras.bolsa.usadas > 0) && (
-            <p className="tenue">Bolsa de horas libres: <strong className={extras.bolsa.saldo < 0 ? 'aviso' : ''}>{extras.bolsa.saldo < 0 ? '−' : ''}{horas(Math.abs(extras.bolsa.saldo))}</strong>
-              {extras.dinero.sinCobrar > 0 && <> · sin cobrar en total: {horas(extras.dinero.sinCobrar)}</>}</p>
+          {modoBolsa !== 'ninguna' && extras && (extras.bolsa.generadas > 0 || extras.bolsa.usadas > 0) && (
+            <p className="tenue">{modoBolsa === 'jornadas' ? 'Te deben' : 'Bolsa de horas libres'}: <strong className={extras.bolsa.saldo < 0 ? 'aviso' : ''}>{extras.bolsa.saldo < 0 ? '−' : ''}{modoBolsa === 'jornadas' ? enJornadas(Math.abs(extras.bolsa.saldo), jornadas) : horas(Math.abs(extras.bolsa.saldo))}</strong></p>
           )}
+          {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
       ) : null}
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
@@ -158,7 +164,7 @@ export default function Calendario() {
 
       {hoja?.tipo === 'editar' && (
         <EditorDia fechas={hoja.fechas} dia={hoja.fechas.length === 1 ? dias[hoja.fechas[0]] : undefined}
-          plantillas={plantillas} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado}
+          plantillas={plantillas} jornadas={jornadas} modoBolsa={modoBolsa} bolsa={extras?.bolsa} cerrar={() => setHoja(null)} guardado={guardado}
           notas={hoja.fechas.length === 1 ? notasPorFecha[hoja.fechas[0]] || [] : null} notasCambiadas={cargarNotas} />
       )}
       {hoja?.tipo === 'nota' && (

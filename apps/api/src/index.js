@@ -9,6 +9,7 @@ const dias = require('./dias');
 const cuentas = require('./cuentas');
 const plantillas = require('./plantillas');
 const notas = require('./notas');
+const jornadas = require('./jornadas');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(cuentas.router);
 app.use(dias);
 app.use(plantillas);
 app.use(notas);
+app.use(jornadas);
 
 app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 
