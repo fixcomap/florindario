@@ -148,9 +148,9 @@ export default function Calendario({ usuario }) {
           {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
       ) : null}
-      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} />}
-
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
+
+      {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} />}
 
       <ul className="leyenda">
         {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}

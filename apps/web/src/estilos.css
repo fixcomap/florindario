@@ -263,3 +263,12 @@ main.con-barra { padding-bottom: 90px; }
 .tarifa-jornada { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--fondo); }
 .tarifa-jornada .tipos { margin: 6px 0 0; }
 .tarifa-jornada label { margin-bottom: 0; }
+
+/* ---------- sueldo plegable ---------- */
+details.sueldo summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
+details.sueldo summary::-webkit-details-marker { display: none; }
+details.sueldo summary h2 { margin: 0; }
+details.sueldo summary span::after { content: ' ▾'; }
+details.sueldo[open] summary { margin-bottom: 8px; }
+details.sueldo[open] summary span { font-size: 0; }
+details.sueldo[open] summary span::after { content: '▴'; font-size: 0.9rem; }
