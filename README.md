@@ -7,11 +7,7 @@ vacaciones, festivos y bajas. Suma las horas por semana y por mes.
 
 Front React (Vite) en Cloudflare Pages + API Node (Express) en Cloud Run + Postgres en Neon.
 
-| Entorno | Front | API | Rama |
-|---|---|---|---|
-| Producción | https://florindario.fixcomap.com | https://api-florindario.fixcomap.com | `main` |
-| Desarrollo | https://florindario.dev.fixcomap.com | https://api-florindario.dev.fixcomap.com | `develop` |
-| Local | http://localhost:5173 | http://localhost:3000 | tu rama |
+Producción: https://florindario.fixcomap.com
 
 ## Estado
 
@@ -35,20 +31,7 @@ docker compose up -d                                   # Postgres en localhost:5
 
 `DEV_USER` entra sin Google (solo fuera de producción). El login con Google se prueba en desarrollo.
 
-## Cómo se despliega
+## Despliegue
 
-Pipeline estándar de [`fixcomap/platform`](https://github.com/fixcomap/platform) según
-[`catalog/florindario.yaml`](https://github.com/fixcomap/platform/blob/main/catalog/florindario.yaml):
-PR → checks; `develop` → migraciones + API `florindario-dev` + front en Pages (rama `develop`);
-`main` → producción con aprobación. GitFlow: `feature/*` → `develop`, `release/x.y.z` → `main`.
-
-## Configuración en Cloud Run
-
-| Variable | Origen |
-|---|---|
-| `DATABASE_URL` | secreto `florindario[-dev]-database-url` (Neon *pooled*, rol `florindario`) |
-| `SESSION_SECRET` | secreto `florindario[-dev]-session-secret` (al azar) |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | secretos del cliente OAuth `florindario` |
-| `FRONT_URL`, `API_URL` | catálogo: primer hostname del entorno |
-
-Migraciones: secreto `florindario[-dev]-database-url-direct` (cadena directa, sin pooler).
+Pipeline estándar de [fixcomap/platform](https://github.com/fixcomap/platform): PR → checks;
+`develop` → entorno de desarrollo (privado); `main` → producción con aprobación.
