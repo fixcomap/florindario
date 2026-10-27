@@ -78,7 +78,30 @@ export default function Calendario({ usuario }) {
     pedir('/sueldo').then(setTarifas).catch(() => setTarifas(null));
   }, []);
 
-  const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
+  // Dirección del último cambio de mes: el nuevo entra desde ese lado.
+  const [direccion, setDireccion] = useState(0);
+  const mover = (n) => {
+    setDireccion(n);
+    setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
+  };
+  const ahoraMismo = new Date();
+  const esMesActual = mes.anio === ahoraMismo.getFullYear() && mes.mes === ahoraMismo.getMonth();
+  const irAHoy = () => {
+    setDireccion(mes.anio * 12 + mes.mes < ahoraMismo.getFullYear() * 12 + ahoraMismo.getMonth() ? 1 : -1);
+    setMes({ anio: ahoraMismo.getFullYear(), mes: ahoraMismo.getMonth() });
+  };
+
+  // Deslizar el mes en horizontal cambia de mes; un toque o un desplazamiento vertical no.
+  const inicioToque = useRef(null);
+  const tocarInicio = (e) => { const t = e.touches[0]; inicioToque.current = { x: t.clientX, y: t.clientY }; };
+  const tocarFin = (e) => {
+    const i = inicioToque.current;
+    inicioToque.current = null;
+    if (!i) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - i.x;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(t.clientY - i.y)) mover(dx < 0 ? 1 : -1);
+  };
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
   const gruposMes = agrupar(notas.filter((n) => n.fijada || !n.fechas.length || n.fechas.some(delMes)));
   const delMesCargados = Object.values(dias).filter((d) => delMes(d.fecha));
@@ -143,7 +166,10 @@ export default function Calendario({ usuario }) {
       <div className="mes">
         <FlechaMes onClick={() => mover(-1)} />
         <h1 className="solo-lectores">{nombreMes(mes.anio, mes.mes)}</h1>
-        <span className="anio" aria-hidden="true">{mes.anio}</span>
+        <span className="centro-mes">
+          <span className="anio" aria-hidden="true">{mes.anio}</span>
+          {!esMesActual && <button type="button" className="hoy-boton" onClick={irAHoy}>Hoy</button>}
+        </span>
         <FlechaMes siguiente onClick={() => mover(1)} />
       </div>
       {eligiendo && (
@@ -154,9 +180,9 @@ export default function Calendario({ usuario }) {
       )}
       {error && <p className="error">{error}</p>}
 
-      <div className="marco-mes" ref={marcoRef}>
-        <span className="mes-gigante" aria-hidden="true" ref={mesRef}>{nombreMesSolo}</span>
-        <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
+      <div className="marco-mes" ref={marcoRef} onTouchStart={tocarInicio} onTouchEnd={tocarFin}>
+        <span key={nombreMesSolo} className="mes-gigante" aria-hidden="true" ref={mesRef}>{nombreMesSolo}</span>
+        <div key={`${mes.anio}-${mes.mes}`} className={`cuadricula${direccion ? ` entra-${direccion > 0 ? 'derecha' : 'izquierda'}` : ''}`} role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
           {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
           <div className="cabeza">h</div>
           {semanas.map((semana) => (
