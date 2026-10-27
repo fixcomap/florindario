@@ -13,5 +13,5 @@ const IMAGENES = { j1: jornada1, j2: jornada2, libre, vacaciones, baja, festivo,
 export default function Personaje({ tipo, className }) {
   const src = IMAGENES[tipo];
   if (!src) return null;
-  return <img className={className} src={src} alt="" aria-hidden="true" loading="lazy" decoding="async" />;
+  return <img className={`${className || ''} personaje-${tipo}`} src={src} alt="" aria-hidden="true" loading="lazy" decoding="async" />;
 }

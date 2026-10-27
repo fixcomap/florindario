@@ -9,6 +9,7 @@ import SueldoMes from '../componentes/SueldoMes.jsx';
 import HojaNota from '../componentes/HojaNota.jsx';
 import { aspecto } from '../datos/tipos.js';
 import Personaje from '../componentes/Personaje.jsx';
+import FlechaMes from '../componentes/FlechaMes.jsx';
 import EditorDia from '../componentes/EditorDia.jsx';
 import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 
@@ -123,9 +124,10 @@ export default function Calendario({ usuario }) {
   return (
     <main className="con-barra">
       <div className="mes">
-        <button className="flecha" onClick={() => mover(-1)} aria-label="Mes anterior">‹</button>
-        <h1>{nombreMes(mes.anio, mes.mes)}</h1>
-        <button className="flecha" onClick={() => mover(1)} aria-label="Mes siguiente">›</button>
+        <FlechaMes onClick={() => mover(-1)} />
+        <h1 className="solo-lectores">{nombreMes(mes.anio, mes.mes)}</h1>
+        <span className="anio" aria-hidden="true">{mes.anio}</span>
+        <FlechaMes siguiente onClick={() => mover(1)} />
       </div>
       {eligiendo && (
         <div className="herramientas">
@@ -135,13 +137,16 @@ export default function Calendario({ usuario }) {
       )}
       {error && <p className="error">{error}</p>}
 
-      <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
-        {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
-        <div className="cabeza">h</div>
-        {semanas.map((semana) => (
-          <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar} notasPorFecha={notasPorFecha} modoBolsa={modoBolsa} jornadas={jornadas}
-            elegidos={elegidos} eligiendo={eligiendo} elegirSemana={() => alternar(semana)} />
-        ))}
+      <div className="marco-mes">
+        <span className="mes-gigante" aria-hidden="true">{nombreMes(mes.anio, mes.mes).slice(0, 3)}</span>
+        <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
+          {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
+          <div className="cabeza">h</div>
+          {semanas.map((semana) => (
+            <Semana key={semana[0]} semana={semana} dias={dias} delMes={delMes} tocar={tocar} notasPorFecha={notasPorFecha} modoBolsa={modoBolsa} jornadas={jornadas}
+              elegidos={elegidos} eligiendo={eligiendo} elegirSemana={() => alternar(semana)} />
+          ))}
+        </div>
       </div>
 
       <p className="total-mes">Este mes: <strong>{horas(totalMes)}</strong></p>
