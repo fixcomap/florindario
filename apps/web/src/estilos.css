@@ -74,7 +74,9 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40%
 }
 .dia .numero { font-family: var(--titulo); font-size: 0.95rem; font-weight: 600; line-height: 1; }
 .dia .contenido { display: flex; flex-direction: column; font-size: 0.68rem; font-weight: 600; line-height: 1.25; letter-spacing: -0.2px; }
-.dia .personaje { display: block; width: 100%; max-width: 40px; aspect-ratio: 1; margin: auto auto 0; }
+/* El personaje ocupa todo el día, muy tenue y por detrás del número, el horario y las marcas. */
+.dia { position: relative; overflow: hidden; isolation: isolate; }
+.dia .personaje { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.22; pointer-events: none; }
 .dia.fuera { opacity: 0.38; }
 .dia.hoy .numero { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--acento); color: #fff; font-size: 0.8rem; }
 .semana-total { display: grid; place-items: center; font-family: var(--titulo); font-weight: 600; font-size: 0.85rem; color: var(--hoja); }
@@ -142,6 +144,9 @@ main.con-barra { padding-bottom: 90px; }
 .semana-plantilla { list-style: none; padding: 0; margin: 6px 0; }
 .semana-plantilla li { padding: 10px 0; border-bottom: 1px solid var(--borde); }
 .fila-dia { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dias-horario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.dia-chip { min-height: 44px; border: 1px solid var(--borde); border-radius: 12px; background: var(--panel); color: var(--tenue); font: inherit; font-weight: 700; cursor: pointer; }
+.dia-chip.activo { background: #fdf0f4; border-color: var(--acento); color: var(--acento); }
 .fila-dia select { padding: 8px; font-size: 0.95rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--tinta); }
 .semana-plantilla .tramos { margin-top: 4px; }
 .semana-plantilla .tramo label { margin: 4px 0; }

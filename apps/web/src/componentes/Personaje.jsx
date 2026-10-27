@@ -200,7 +200,7 @@ export default function Personaje({ tipo, className }) {
   const dibujo = DIBUJOS[tipo];
   if (!dibujo) return null;
   return (
-    <svg className={className} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+    <svg className={className} viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
       {dibujo}
     </svg>
   );
