@@ -17,6 +17,8 @@ export default [
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react/prop-types': 'off',
+      // Avisa (no bloquea): cambiar estado en un efecto, típico de "cargando…".
+      'react-hooks/set-state-in-effect': 'warn',
       'no-unused-vars': ['error', { ignoreRestSiblings: true }],
     },
   },
