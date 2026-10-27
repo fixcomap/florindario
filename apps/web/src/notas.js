@@ -34,3 +34,17 @@ export function fechasTexto(fechas) {
   const lista = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs.at(-1)}` : String(xs[0]));
   return porMes.map((m) => `${lista(m.dias)} ${m.etiqueta}`).join(', ');
 }
+
+// Fecha de un post-it en grande y pequeño: "5" + "OCT", "14–15" + "OCT", "3 días" + "5 y 9 oct, 3 nov", "General".
+export function etiquetaFechas(fechas) {
+  if (!fechas.length) return { grande: 'General', chico: 'del mes' };
+  const ds = fechas.map(desdeIso);
+  const mismoMes = ds.every((d) => d.getMonth() === ds[0].getMonth() && d.getFullYear() === ds[0].getFullYear());
+  if (!mismoMes) return { grande: `${ds.length} días`, chico: fechasTexto(fechas) };
+  const dias = ds.map((d) => d.getDate());
+  const seguidos = dias.every((n, i) => i === 0 || n === dias[i - 1] + 1);
+  const grande = dias.length === 1 ? String(dias[0])
+    : seguidos ? `${dias[0]}–${dias.at(-1)}`
+    : dias.length === 2 ? `${dias[0]} · ${dias[1]}` : `${dias.length} días`;
+  return { grande, chico: MESES[ds[0].getMonth()].toUpperCase(), detalle: !seguidos && dias.length > 2 ? fechasTexto(fechas) : '' };
+}
