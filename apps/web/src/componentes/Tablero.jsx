@@ -17,7 +17,7 @@ function Fijar({ g, mes, cambiado }) {
 function Fecha({ g }) {
   const e = etiquetaFechas(g.fechas);
   return (
-    <span className={`nota-fecha${g.fechas.length ? '' : ' general'}`}>
+    <span className={`nota-fecha tam-${e.tam}${g.fechas.length ? '' : ' general'}`}>
       <span className="grande">{e.grande}</span>
       <span className="chico">{e.chico}</span>
     </span>
