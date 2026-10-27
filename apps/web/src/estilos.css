@@ -74,14 +74,13 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40%
 }
 .dia .numero { font-family: var(--titulo); font-size: 0.95rem; font-weight: 600; line-height: 1; }
 .dia .contenido { display: flex; flex-direction: column; font-size: 0.68rem; font-weight: 600; line-height: 1.25; letter-spacing: -0.2px; }
+.dia .personaje { display: block; width: 100%; max-width: 40px; aspect-ratio: 1; margin: auto auto 0; }
 .dia.fuera { opacity: 0.38; }
 .dia.hoy .numero { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--acento); color: #fff; font-size: 0.8rem; }
 .semana-total { display: grid; place-items: center; font-family: var(--titulo); font-weight: 600; font-size: 0.85rem; color: var(--hoja); }
 
 .total-mes { text-align: right; margin: 14px 4px 6px; color: var(--tenue); }
 .total-mes strong { font-family: var(--titulo); font-size: 1.3rem; color: var(--tinta); }
-.leyenda { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 4px; margin: 6px 0; font-size: 0.8rem; color: var(--tenue); }
-.leyenda span { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
 
 /* ---------- hoja para editar un día ---------- */
 .fondo-hoja { position: fixed; inset: 0; z-index: 10; background: rgba(47, 42, 51, 0.35); display: flex; align-items: flex-end; justify-content: center; }
