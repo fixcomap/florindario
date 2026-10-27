@@ -62,7 +62,7 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40%
 /* Mes en curso: abreviatura gigante en vertical a la derecha, cortada por el borde. */
 .marco-mes { position: relative; overflow: hidden; padding-right: 30px; margin-right: -12px; }
 .marco-mes .cuadricula { position: relative; }
-.mes-gigante { position: absolute; right: -18px; top: 50%; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; pointer-events: none; user-select: none; font-family: var(--rotulo); font-weight: 400; font-size: 7.5rem; line-height: 0.8; letter-spacing: 0; text-transform: uppercase; color: var(--acento); opacity: 0.16; }
+.mes-gigante { position: absolute; right: -18px; top: 50%; transform: translateY(-50%) rotate(180deg) scaleY(var(--compresion, 1)); writing-mode: vertical-rl; pointer-events: none; user-select: none; font-family: var(--rotulo); font-weight: 400; font-size: 7rem; line-height: 0.8; letter-spacing: -1px; text-transform: uppercase; color: var(--acento); opacity: 0.16; }
 .mes .anio { font-family: var(--rotulo); font-weight: 400; font-size: 1.6rem; letter-spacing: 1px; color: var(--tinta); }
 .solo-lectores { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -117,6 +117,10 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40%
 .tipos { display: flex; flex-wrap: wrap; gap: 8px; }
 .tipos button { flex: 1 1 auto; padding: 9px 10px; border: 1px solid var(--borde); border-radius: 999px; background: var(--fondo); color: var(--tinta); font-size: 0.92rem; cursor: pointer; }
 .tipos button.activo { font-weight: 700; }
+.tipos button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.miniatura { width: 26px; height: 26px; flex: none; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1.5px var(--panel); }
+.semana-plantilla .tipos { margin-bottom: 8px; }
+.quitar-horario { display: block; margin: 0 0 6px auto; font-size: 0.85rem; }
 .tramos { margin-top: 14px; }
 .tramo { display: flex; align-items: flex-end; gap: 8px; }
 .tramo label { flex: 1; }
@@ -245,6 +249,7 @@ main.con-barra { padding-bottom: 90px; }
 .selector-jornada { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
 .selector-jornada button { flex: none; padding: 8px 14px; border: 1.5px solid var(--borde); border-radius: 999px; background: var(--fondo); color: var(--tinta); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
 .selector-jornada button.activo { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+.selector-jornada button { display: inline-flex; align-items: center; gap: 6px; padding-left: 6px; }
 .paso { margin: 0 0 6px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--tenue); }
 .ajustes { margin: 18px 0; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 16px; background: var(--panel); }
 .ajustes h2 { margin: 0 0 4px; font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; }
