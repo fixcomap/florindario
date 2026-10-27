@@ -34,6 +34,20 @@ const JORNADAS_BASE = [
   { nombre: 'Jornada 40 h', minutosDia: 480 },
 ];
 
+// Plantillas de una jornada: tocar una la abre; la × la borra.
+function ListaPlantillas({ items, abrir, borrar }) {
+  return (
+    <ul className="lista-plantillas">
+      {items.map((p) => (
+        <li key={p.id}>
+          <button onClick={() => abrir(p)}><strong>{p.nombre}</strong><span className="tenue">{resumen(p)}</span></button>
+          <button className="quitar" aria-label={`Borrar ${p.nombre}`} onClick={() => borrar(p)}>×</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // Primero las jornadas (cuánto dura un día de trabajo) y, dentro de cada una, sus plantillas.
 export default function Plantillas() {
   const [jornadas, setJornadas] = useState([]);
@@ -58,16 +72,6 @@ export default function Plantillas() {
   if (jornada) return <EditorJornada inicial={jornada} cerrar={cerrar} />;
 
   const sinJornada = lista.filter((p) => !jornadas.some((j) => j.id === p.jornadaId));
-  const Lista = ({ items }) => (
-    <ul className="lista-plantillas">
-      {items.map((p) => (
-        <li key={p.id}>
-          <button onClick={() => setPlantilla(p)}><strong>{p.nombre}</strong><span className="tenue">{resumen(p)}</span></button>
-          <button className="quitar" aria-label={`Borrar ${p.nombre}`} onClick={() => borrar(p)}>×</button>
-        </li>
-      ))}
-    </ul>
-  );
 
   return (
     <main className="plantillas">
@@ -91,7 +95,7 @@ export default function Plantillas() {
             <div><h2>{j.nombre}</h2><span className="tenue">{horas(j.minutosDia)} por día</span></div>
             <button className="enlace" onClick={() => setJornada(j)}>Editar</button>
           </header>
-          <Lista items={lista.filter((p) => p.jornadaId === j.id)} />
+          <ListaPlantillas items={lista.filter((p) => p.jornadaId === j.id)} abrir={setPlantilla} borrar={borrar} />
           <div className="bases">
             {bases(j).map((b) => <button key={b.nombre} className="chip" onClick={() => setPlantilla({ ...b, jornadaId: j.id })}>+ {b.nombre}</button>)}
             <button className="chip" onClick={() => setPlantilla({ nombre: '', dias: Array(7).fill(null), jornadaId: j.id })}>+ Otra</button>
@@ -102,7 +106,7 @@ export default function Plantillas() {
       {sinJornada.length > 0 && (
         <section className="jornada">
           <header><div><h2>Sin jornada</h2><span className="tenue">Editalas para asignarles una jornada</span></div></header>
-          <Lista items={sinJornada} />
+          <ListaPlantillas items={sinJornada} abrir={setPlantilla} borrar={borrar} />
         </section>
       )}
 
