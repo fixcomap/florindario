@@ -56,7 +56,7 @@ async function leerSesion(req, res, next) {
   if (token && /^[0-9a-f]{64}$/.test(token)) {
     try {
       const { rows } = await pool.query(
-        `SELECT u.id, u.email, u.nombre, u.estado, u.bolsa FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
+        `SELECT u.id, u.email, u.nombre, u.estado, u.bolsa, u.vacaciones_anuales, u.vacaciones_computo, u.dias_disposicion FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
          WHERE s.token_hash = $1 AND s.vence_en > now()`,
         [hash(token)]
       );
@@ -148,9 +148,12 @@ router.get('/callback', async (req, res, next) => {
   }
 });
 
+// Ajustes de vacaciones tal como los ve el front.
+const vacaciones = (u) => ({ vacacionesAnuales: u.vacaciones_anuales, vacacionesComputo: u.vacaciones_computo, diasDisposicion: u.dias_disposicion });
+
 router.get('/yo', (req, res) => {
   if (!req.usuario) return res.status(401).json({ error: 'Sin sesión' });
-  res.json({ nombre: req.usuario.nombre, email: req.usuario.email, estado: req.usuario.estado, bolsa: req.usuario.bolsa });
+  res.json({ nombre: req.usuario.nombre, email: req.usuario.email, estado: req.usuario.estado, bolsa: req.usuario.bolsa, ...vacaciones(req.usuario) });
 });
 
 router.post('/salir', async (req, res, next) => {
@@ -164,4 +167,4 @@ router.post('/salir', async (req, res, next) => {
   }
 });
 
-module.exports = { router, leerSesion, requiereSesion, cerrarSesion };
+module.exports = { vacaciones, router, leerSesion, requiereSesion, cerrarSesion };
