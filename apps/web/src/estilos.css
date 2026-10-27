@@ -228,15 +228,8 @@ main.con-barra { padding-bottom: 90px; }
 
 /* ---------- notas ---------- */
 .marca-nota { display: inline-block; width: 8px; height: 8px; margin-left: 3px; vertical-align: 5px; background: #f6d64a; border-radius: 1px 1px 3px 1px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); transform: rotate(-8deg); }
-.tablero { margin: 18px 0 10px; padding: 14px 12px 18px; border-radius: 18px; background: #efe6d8 radial-gradient(rgba(120, 95, 60, 0.07) 1px, transparent 1px) 0 0 / 10px 10px; box-shadow: inset 0 0 0 1px #e2d6c3; }
+.tablero { margin: 18px 0 10px; padding: 14px 12px; border-radius: 18px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--borde); }
 .tablero h2 { margin: 0 2px 12px; font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; }
-.postits { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-.postit { position: relative; width: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; min-height: 110px; padding: 18px 12px 10px; border: 0; text-align: left; font: inherit; color: #3a3326; cursor: pointer; box-shadow: 0 6px 12px rgba(80, 60, 30, 0.16), 0 1px 2px rgba(80, 60, 30, 0.2); }
-.postit::before { content: ''; position: absolute; top: -7px; left: 50%; width: 46px; height: 16px; transform: translateX(-50%) rotate(-2deg); background: rgba(255, 255, 255, 0.55); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
-.postit-texto { font-size: 0.95rem; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
-.postit-dias { font-size: 0.72rem; font-weight: 600; color: rgba(58, 51, 38, 0.7); }
-.postit.nuevo { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.5); border: 2px dashed #cdbfa8; box-shadow: none; color: #8a7a60; font-weight: 600; transform: none; }
-.postit.nuevo::before { display: none; }
 .texto-nota { width: 100%; margin-top: 6px; padding: 12px; font: inherit; font-size: 1rem; color: var(--tinta); background: #fff8c9; border: 1px solid #efe1a0; border-radius: 10px; resize: vertical; }
 .notas-dia { margin-top: 12px; display: grid; gap: 6px; font-size: 0.85rem; }
 .nota-dia { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 10px; background: #fff8c9; border-radius: 10px; font-size: 0.95rem; }
@@ -270,11 +263,6 @@ main.con-barra { padding-bottom: 90px; }
 .opcion small { display: block; color: var(--tenue); }
 
 /* ---------- notas fijadas ---------- */
-.postit-marco { position: relative; display: flex; transform: rotate(var(--giro, 0deg)); }
-.postit-marco.fijada { transform: none; }
-.postit-marco.fijada .postit::before { display: none; }
-.pin { position: absolute; top: -9px; right: -6px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 1rem; cursor: pointer; filter: grayscale(1); opacity: 0.35; transform: rotate(20deg); }
-.pin[aria-pressed="true"] { top: -12px; left: 50%; right: auto; transform: translateX(-50%) rotate(10deg); filter: none; opacity: 1; font-size: 1.3rem; }
 .fijar { margin-top: 10px; }
 
 /* ---------- días compensatorios ---------- */
@@ -347,3 +335,26 @@ select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--bord
 .barra-mes.elegida .relleno, .barra-mes:hover .relleno { opacity: 1; }
 .barra-mes .letra { position: absolute; left: 0; right: 0; bottom: 0; font-size: 0.72rem; font-weight: 600; color: var(--tenue); text-align: center; }
 .barra-mes.elegida .letra { color: var(--tinta); }
+
+/* Notas: tarjetas con la fecha en la letra del mes (o GENERAL) y marcador para fijar. */
+.notas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.nota { position: relative; }
+.nota-cuerpo { display: flex; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: var(--tinta); text-align: left; cursor: pointer; }
+.nota-texto { flex: 1; min-width: 0; font-size: 0.95rem; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.nota-fecha { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; font-family: var(--rotulo); line-height: 1; }
+.nota-fecha .grande { font-size: 1.7rem; letter-spacing: 0.5px; }
+.nota-fecha .chico { font-family: system-ui, sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.75; }
+.nota-fecha.general .grande { font-size: 1.05rem; letter-spacing: 1.5px; text-transform: uppercase; }
+.fijar { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; padding: 5px; border: 0; background: none; cursor: pointer; }
+.fijar svg { display: block; width: 100%; height: 100%; fill: none; stroke: var(--tenue); stroke-width: 1.8; stroke-linejoin: round; }
+.fijar[aria-pressed="true"] svg { fill: var(--acento); stroke: var(--acento); }
+.nota-nueva { padding: 12px; border: 2px dashed var(--borde); border-radius: 14px; background: none; color: var(--tenue); font: inherit; font-weight: 600; cursor: pointer; }
+
+/* Bloque de fecha a la izquierda con el color de la nota. */
+.notas .nota { border: 1px solid var(--borde); border-radius: 14px; background: var(--panel); overflow: hidden; }
+.notas .nota.fijada { border-color: var(--acento); }
+.notas .nota-cuerpo { align-items: stretch; min-height: 72px; }
+.notas .nota-fecha { width: 74px; padding: 8px 4px; background: var(--color-nota); }
+.notas .nota-texto { padding: 12px 38px 12px 12px; align-self: center; }
+
+
