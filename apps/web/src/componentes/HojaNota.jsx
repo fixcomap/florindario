@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { pedir } from '../api.js';
-import { fechasTexto } from '../notas.js';
+import { colorDe, etiquetaFechas, fechasTexto } from '../notas.js';
 
 const JSON_ = { 'Content-Type': 'application/json' };
 
@@ -10,8 +10,9 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
   const [fijada, setFijada] = useState(grupo?.fijada || false);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const destino = grupo ? (grupo.fechas.length ? fechasTexto(grupo.fechas) : 'General')
-    : fechas?.length ? fechasTexto(fechas) : 'General';
+  const lasFechas = grupo ? grupo.fechas : fechas || [];
+  const destino = lasFechas.length ? fechasTexto(lasFechas) : 'Nota general del mes';
+  const etiqueta = etiquetaFechas(lasFechas);
 
   async function hacer(fn) {
     setError('');
@@ -35,19 +36,34 @@ export default function HojaNota({ grupo, fechas, mes, cerrar, cambiado }) {
 
   return (
     <div className="fondo-hoja" onClick={cerrar}>
-      <section className="hoja" role="dialog" aria-label={grupo ? 'Editar nota' : 'Nueva nota'} onClick={(e) => e.stopPropagation()}>
-        <h2>{grupo ? 'Nota' : 'Nueva nota'}</h2>
-        <p className="tenue">📅 {destino}</p>
-        <textarea className="texto-nota" value={texto} maxLength={500} rows={4} autoFocus placeholder="Escribí tu nota…" onChange={(e) => setTexto(e.target.value)} />
-        <label className="casilla fijar">
-          <input type="checkbox" checked={fijada} onChange={(e) => setFijada(e.target.checked)} />
-          <span>📌 Fijar: se ve también en los meses siguientes, hasta que le quites el pin</span>
-        </label>
+      <section className="hoja hoja-nota" role="dialog" aria-label={grupo ? 'Editar nota' : 'Nueva nota'} style={{ '--color-nota': colorDe(texto || grupo?.texto || '') }} onClick={(e) => e.stopPropagation()}>
+        <header className="cabecera-nota">
+          <span className={`nota-fecha tam-${etiqueta.tam}${lasFechas.length ? '' : ' general'}`}>
+            <span className="grande">{etiqueta.grande}</span>
+            <span className="chico">{etiqueta.chico}</span>
+          </span>
+          <span className="titulo-nota">
+            <h2>{grupo ? 'Nota' : 'Nueva nota'}</h2>
+            <small>{destino}</small>
+          </span>
+          <button type="button" className="cerrar-hoja" aria-label="Cerrar" onClick={cerrar}>✕</button>
+        </header>
+        <textarea className="texto-nota" value={texto} maxLength={500} rows={4} autoFocus placeholder="Escribí tu nota…" aria-label="Texto de la nota" onChange={(e) => setTexto(e.target.value)} />
+        <button type="button" className="interruptor-fijar" role="switch" aria-checked={fijada} onClick={() => setFijada(!fijada)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4.2L6 21V4.5a1 1 0 0 1 1-1Z" /></svg>
+          <span><strong>Fijar en los meses siguientes</strong><small>Se sigue viendo hasta que la quites</small></span>
+          <span className="pista" aria-hidden="true" />
+        </button>
         {error && <p className="error">{error}</p>}
-        <div className="acciones">
-          <button className="boton" disabled={enviando || !texto.trim()} onClick={guardar}>Guardar</button>
-          {grupo && <button className="boton secundario peligro" disabled={enviando} onClick={borrar}>Borrar nota</button>}
-          <button className="enlace" onClick={cerrar}>Cancelar</button>
+        <button className="boton" disabled={enviando || !texto.trim()} onClick={guardar}>Guardar</button>
+        <div className="pie-nota">
+          {grupo ? (
+            <button type="button" className="borrar-nota" disabled={enviando} onClick={borrar}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" /></svg>
+              Borrar
+            </button>
+          ) : <span />}
+          <button type="button" className="enlace" onClick={cerrar}>Cancelar</button>
         </div>
       </section>
     </div>
