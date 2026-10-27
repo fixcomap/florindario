@@ -7,7 +7,8 @@ import { saldoEnDias, sumaEnDias } from '../jornadas.js';
 import Tablero from '../componentes/Tablero.jsx';
 import SueldoMes from '../componentes/SueldoMes.jsx';
 import HojaNota from '../componentes/HojaNota.jsx';
-import { TIPOS, tipo } from '../datos/tipos.js';
+import { aspecto } from '../datos/tipos.js';
+import Personaje from '../componentes/Personaje.jsx';
 import EditorDia from '../componentes/EditorDia.jsx';
 import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 
@@ -174,10 +175,6 @@ export default function Calendario({ usuario }) {
 
       {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} diasAnterior={diasAnterior} mesAnterior={mesAnterior} />}
 
-      <ul className="leyenda">
-        {TIPOS.map((t) => <li key={t.id}><span style={{ background: t.color }} /> {t.nombre}</li>)}
-      </ul>
-
       {!eligiendo && (
         <nav className="barra-acciones">
           <button className="capsula" onClick={() => setEligiendo(true)}>☑ Elegir días</button>
@@ -215,7 +212,7 @@ function Semana({ semana, dias, delMes, tocar, notasPorFecha, modoBolsa, jornada
     <>
       {semana.map((f) => {
         const d = dias[f];
-        const t = d && tipo(d.tipo);
+        const t = d && aspecto(d, jornadas);
         const elegido = elegidos.has(f);
         return (
           <button
@@ -230,9 +227,10 @@ function Semana({ semana, dias, delMes, tocar, notasPorFecha, modoBolsa, jornada
             <span className="numero">{desdeIso(f).getDate()}{notasPorFecha[f] && <span className="marca-nota" title={notasPorFecha[f].map((n) => n.texto).join(' · ')} />}</span>
             {t && (
               <span className="contenido" style={{ color: t.color }}>
-                {d.tipo === 'trabajo' ? d.tramos.map((tr) => <span key={tr.inicio}>{tramoCorto(tr)}</span>) : <span>{t.icono}</span>}
+                {d.tipo === 'trabajo' ? d.tramos.map((tr) => <span key={tr.inicio}>{tramoCorto(tr)}</span>) : !t.personaje && <span>{t.icono}</span>}
               </span>
             )}
+            {t?.personaje && <Personaje tipo={t.personaje} className="personaje" />}
             {minutosDelDia(d) > 0 && <span className="horas-dia">{horasCortas(minutosDelDia(d))}</span>}
             {!d?.extra && domingoLibre(d, jornadas) > 0 && (
               <span className="marca-extra horas">+{String(domingoLibre(d, jornadas) / jornadas.find((j) => j.id === d.jornadaId).minutosDia).replace('.5', ',5')}d</span>
