@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { pedir } from '../api.js';
 import { resumen } from '../plantillas.js';
-import { TIPOS } from '../datos/tipos.js';
+import { TIPOS, aspecto } from '../datos/tipos.js';
+import Personaje from '../componentes/Personaje.jsx';
 import { horas } from '../horas.js';
 import { DIAS_CORTOS } from '../fechas.js';
 import Tramos from '../componentes/Tramos.jsx';
@@ -228,12 +229,18 @@ function EditorPlantilla({ inicial, jornadas, cerrar }) {
                   aria-pressed={g.dias.includes(i)} aria-label={DIAS[i]} onClick={() => alternarDia(k, i)}>{c}</button>
               ))}
             </div>
-            <div className="fila-dia">
-              <select value={g.dia.tipo} onChange={(e) => cambiarTipo(k, e.target.value)} aria-label={`Tipo del horario ${k + 1}`}>
-                {TIPOS.filter((t) => t.id !== 'compensado').map((t) => <option key={t.id} value={t.id}>{t.icono} {t.nombre}</option>)}
-              </select>
-              {grupos.length > 1 && <button type="button" className="enlace" onClick={() => setGrupos(grupos.filter((_, n) => n !== k))}>Quitar</button>}
+            <div className="tipos" role="group" aria-label={`Tipo del horario ${k + 1}`}>
+              {TIPOS.filter((t) => t.id !== 'compensado').map((t) => {
+                const a = aspecto({ tipo: t.id, jornadaId }, jornadas);
+                const activo = g.dia.tipo === t.id;
+                return (
+                  <button key={t.id} type="button" className={activo ? 'activo' : ''} aria-pressed={activo}
+                    style={activo ? { background: a.fondo, borderColor: a.color, color: a.color } : undefined}
+                    onClick={() => cambiarTipo(k, t.id)}><Personaje tipo={a.personaje} className="miniatura" />{t.nombre}</button>
+                );
+              })}
             </div>
+            {grupos.length > 1 && <button type="button" className="enlace quitar-horario" onClick={() => setGrupos(grupos.filter((_, n) => n !== k))}>Quitar este horario</button>}
             {g.dia.tipo === 'trabajo' && <Tramos compacto tramos={g.dia.tramos} cambiar={(tramos) => cambiarGrupo(k, { ...g, dia: { ...g.dia, tramos } })} />}
           </li>
         ))}

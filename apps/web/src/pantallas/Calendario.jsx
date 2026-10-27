@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { pedir } from '../api.js';
 import { DIAS_CORTOS, desdeIso, hoy, iso, nombreMes, semanasDelMes } from '../fechas.js';
 import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
@@ -121,6 +121,23 @@ export default function Calendario({ usuario }) {
     terminar();
   };
 
+  // Nombre completo en vertical, mismo tamaño de letra siempre: si no cabe en el alto
+  // del mes (meses largos o de 4 semanas), se comprime en vertical lo justo.
+  const marcoRef = useRef(null);
+  const mesRef = useRef(null);
+  useLayoutEffect(() => {
+    const marco = marcoRef.current;
+    const texto = mesRef.current;
+    if (!marco || !texto) return undefined;
+    const ajustar = () => texto.style.setProperty('--compresion', Math.min(1, (marco.clientHeight * 0.96) / texto.offsetHeight));
+    ajustar();
+    const observador = new ResizeObserver(ajustar);
+    observador.observe(marco);
+    document.fonts?.ready.then(ajustar);
+    return () => observador.disconnect();
+  });
+  const nombreMesSolo = nombreMes(mes.anio, mes.mes).split(' ')[0];
+
   return (
     <main className="con-barra">
       <div className="mes">
@@ -137,8 +154,8 @@ export default function Calendario({ usuario }) {
       )}
       {error && <p className="error">{error}</p>}
 
-      <div className="marco-mes">
-        <span className="mes-gigante" aria-hidden="true">{nombreMes(mes.anio, mes.mes).slice(0, 3)}</span>
+      <div className="marco-mes" ref={marcoRef}>
+        <span className="mes-gigante" aria-hidden="true" ref={mesRef}>{nombreMesSolo}</span>
         <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
           {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
           <div className="cabeza">h</div>
