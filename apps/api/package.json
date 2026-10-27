@@ -7,7 +7,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "migrar": "node scripts/migrar.js",
-    "test": "node --test",
+    "test": "node --test --experimental-test-coverage --test-coverage-include=src/validar.js --test-coverage-lines=85 --test-coverage-branches=80",
     "lint": "eslint ."
   },
   "engines": {
