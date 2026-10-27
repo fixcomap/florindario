@@ -230,7 +230,7 @@ function EditorPlantilla({ inicial, jornadas, cerrar }) {
               ))}
             </div>
             <div className="tipos" role="group" aria-label={`Tipo del horario ${k + 1}`}>
-              {TIPOS.filter((t) => t.id !== 'compensado').map((t) => {
+              {TIPOS.filter((t) => t.id !== 'compensado' && t.id !== 'disposicion').map((t) => {
                 const a = aspecto({ tipo: t.id, jornadaId }, jornadas);
                 const activo = g.dia.tipo === t.id;
                 return (

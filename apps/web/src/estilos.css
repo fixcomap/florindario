@@ -312,3 +312,18 @@ details.sueldo[open] summary span::after { content: '▴'; font-size: 0.9rem; }
 select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); color: var(--tinta); font-size: 0.85rem; }
 .marca-domingo { position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; font-size: 0.6rem; font-weight: 700; color: #fff; background: #c98a12; }
 
+
+/* Resumen del año bajo el total del mes. */
+.resumen-anio { margin: 10px 0; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 14px; background: var(--panel); }
+.resumen-anio h2 { margin: 0 0 8px; font-family: var(--titulo); font-weight: 600; font-size: 1.1rem; }
+.resumen-anio .contador { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; }
+.resumen-anio .contador span:not(.barra) { display: flex; flex-direction: column; }
+.resumen-anio .contador small { color: var(--tenue); }
+.resumen-anio .barra { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--borde); overflow: hidden; }
+.resumen-anio .barra span { display: block; height: 100%; border-radius: 999px; background: #16737f; }
+.resumen-anio .contadores { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 12px 0 0; padding: 0; font-size: 0.9rem; }
+.resumen-anio .contadores li { display: inline-flex; align-items: center; gap: 6px; }
+.resumen-anio .miniatura { width: 30px; height: 30px; }
+.resumen-anio .contador + .contador { margin-top: 10px; }
+.miniatura.sin-dibujo { display: inline-grid; place-items: center; background: var(--fondo); font-size: 0.9rem; }
+.personaje-disposicion { filter: hue-rotate(-55deg) saturate(0.9); }

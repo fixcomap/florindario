@@ -8,7 +8,8 @@ import baja from '../assets/personajes/baja.jpg';
 import festivo from '../assets/personajes/festivo.jpg';
 import compensado from '../assets/personajes/compensado.jpg';
 
-const IMAGENES = { j1: jornada1, j2: jornada2, libre, vacaciones, baja, festivo, compensado };
+// Libre disposición: la de vacaciones, pasada a verde por CSS (.personaje-disposicion).
+const IMAGENES = { j1: jornada1, j2: jornada2, libre, vacaciones, baja, festivo, compensado, disposicion: vacaciones };
 
 export default function Personaje({ tipo, className }) {
   const src = IMAGENES[tipo];

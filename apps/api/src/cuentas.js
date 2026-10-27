@@ -9,7 +9,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const pool = require('./db');
-const { requiereSesion, cerrarSesion } = require('./auth');
+const { requiereSesion, cerrarSesion, vacaciones: verVacaciones } = require('./auth');
 
 const LIMITES = {
   altasPorHora: Number(process.env.ALTAS_POR_HORA || 30),
@@ -89,19 +89,32 @@ router.post('/cuenta/alta', requiereSesion, async (req, res, next) => {
       "UPDATE usuarios SET estado = 'activa', nombre = $2, terminos_aceptados_en = now() WHERE id = $1",
       [req.usuario.id, nombre]
     );
-    res.json({ nombre, email: req.usuario.email, estado: 'activa', bolsa: req.usuario.bolsa });
+    res.json({ nombre, email: req.usuario.email, estado: 'activa', bolsa: req.usuario.bolsa, ...verVacaciones(req.usuario) });
   } catch (err) {
     next(err);
   }
 });
 
-// Ajustes: cómo le devuelven las horas extra.
+// Ajustes: cómo le devuelven las horas extra y cuántos días de vacaciones tiene al año.
+// Se manda solo lo que cambia; lo que no viene se queda como está.
 router.put('/cuenta/ajustes', requiereActiva, async (req, res, next) => {
   try {
-    const bolsa = req.body?.bolsa;
+    const bolsa = req.body?.bolsa ?? req.usuario.bolsa;
     if (!['horas', 'jornadas', 'ninguna'].includes(bolsa)) return res.status(400).json({ error: 'bolsa: horas, jornadas o ninguna' });
-    await pool.query('UPDATE usuarios SET bolsa = $2 WHERE id = $1', [req.usuario.id, bolsa]);
-    res.json({ bolsa });
+    const u = {
+      vacaciones_anuales: req.body?.vacacionesAnuales ?? req.usuario.vacaciones_anuales,
+      vacaciones_computo: req.body?.vacacionesComputo ?? req.usuario.vacaciones_computo,
+      dias_disposicion: req.body?.diasDisposicion ?? req.usuario.dias_disposicion,
+    };
+    const entero = (n, max) => Number.isInteger(n) && n >= 0 && n <= max;
+    if (!entero(u.vacaciones_anuales, 60)) return res.status(400).json({ error: 'vacaciones al año: entre 0 y 60 días' });
+    if (!['habiles', 'naturales'].includes(u.vacaciones_computo)) return res.status(400).json({ error: 'vacaciones: hábiles o naturales' });
+    if (!entero(u.dias_disposicion, 10)) return res.status(400).json({ error: 'libre disposición: entre 0 y 10 días' });
+    await pool.query(
+      'UPDATE usuarios SET bolsa = $2, vacaciones_anuales = $3, vacaciones_computo = $4, dias_disposicion = $5 WHERE id = $1',
+      [req.usuario.id, bolsa, u.vacaciones_anuales, u.vacaciones_computo, u.dias_disposicion]
+    );
+    res.json({ bolsa, ...verVacaciones(u) });
   } catch (err) {
     next(err);
   }

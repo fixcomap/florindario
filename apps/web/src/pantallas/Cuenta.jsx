@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { pedir } from '../api.js';
 import AjustesSueldo from '../componentes/AjustesSueldo.jsx';
 
+const COMPUTO = [
+  ['habiles', 'Días hábiles', 'Cuentan de lunes a viernes; sábados, domingos y festivos no gastan días.'],
+  ['naturales', 'Días naturales', 'Cuentan todos los días marcados como vacaciones.'],
+];
+
 const BOLSA = [
   ['jornadas', 'Días compensatorios', 'Te las devuelven en días de una jornada: p. ej. 1 día en Jornada 20 h.'],
   ['horas', 'Bolsa de horas', 'Las extras que no te pagan suman horas libres que después usás.'],
@@ -21,6 +26,13 @@ export default function Cuenta({ usuario, cambiar }) {
     }
   }
 
+  // Guarda solo lo que cambió de los ajustes de vacaciones.
+  function guardarVacaciones(cambios) {
+    if (Object.entries(cambios).every(([k, v]) => (usuario[k] || 0) === v)) return;
+    pedir('/cuenta/ajustes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cambios) })
+      .then(({ bolsa, ...vac }) => cambiar({ ...usuario, ...vac })).catch((err) => setError(err.message));
+  }
+
   return (
     <main className="cuenta">
       <h1>Tu cuenta</h1>
@@ -37,6 +49,25 @@ export default function Cuenta({ usuario, cambiar }) {
           </label>
         ))}
         {usuario.bolsa === 'jornadas' && <p className="tenue">Configurá tus jornadas en <a href="/plantillas">Plantillas</a>.</p>}
+      </section>
+      <section className="ajustes">
+        <h2>Vacaciones</h2>
+        <label>Días de vacaciones al año
+          <input type="number" min="0" max="60" inputMode="numeric" defaultValue={usuario.vacacionesAnuales || ''} placeholder="Ej.: 22"
+            onBlur={(e) => guardarVacaciones({ vacacionesAnuales: Number(e.target.value || 0) })} />
+        </label>
+        <p className="tenue">Los que te corresponden este año, con los de antigüedad incluidos.</p>
+        {COMPUTO.map(([id, nombre, detalle]) => (
+          <label key={id} className="opcion">
+            <input type="radio" name="computo" checked={usuario.vacacionesComputo === id} onChange={() => guardarVacaciones({ vacacionesComputo: id })} />
+            <span><strong>{nombre}</strong><small>{detalle}</small></span>
+          </label>
+        ))}
+        <label>Días de libre disposición al año
+          <input type="number" min="0" max="10" inputMode="numeric" defaultValue={usuario.diasDisposicion || ''} placeholder="Ej.: 1"
+            onBlur={(e) => guardarVacaciones({ diasDisposicion: Number(e.target.value || 0) })} />
+        </label>
+        <p className="tenue">Días libres que eliges tú. Se marcan en el calendario como «Libre disposición».</p>
       </section>
       <AjustesSueldo />
       <p><a href="/terminos">Términos de uso</a> · <a href="/privacidad">Política de privacidad</a></p>

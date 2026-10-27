@@ -94,6 +94,24 @@ router.put('/dias', manejar(async (req, res) => {
   }
 }));
 
+// Días de cada tipo en un año (vacaciones gastadas, bajas, festivos...).
+router.use('/resumen', protegerApp);
+router.get('/resumen', manejar(async (req, res) => {
+  const anio = Number(req.query.anio);
+  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: 'anio: un año entre 2000 y 2100' });
+  const { rows } = await pool.query(
+    `SELECT tipo, count(*)::int AS dias, count(*) FILTER (WHERE extract(isodow FROM fecha) <= 5)::int AS habiles FROM dias
+     WHERE usuario_id = $1 AND fecha >= make_date($2, 1, 1) AND fecha < make_date($2 + 1, 1, 1)
+     GROUP BY tipo`,
+    [req.usuario.id, anio]
+  );
+  // vacaciones: según cómo las cuenta el usuario (hábiles = de lunes a viernes; los festivos ya son otro tipo).
+  const dias = Object.fromEntries(rows.map((r) => [r.tipo, r.dias]));
+  const vac = rows.find((r) => r.tipo === 'vacaciones');
+  if (vac) dias.vacaciones = req.usuario.vacaciones_computo === 'naturales' ? vac.dias : vac.habiles;
+  res.json({ anio, dias });
+}));
+
 // Horas extra de siempre: lo pagado (cobrado o no) y la bolsa de horas libres.
 router.use('/extras', protegerApp);
 router.get('/extras', manejar(async (req, res) => {

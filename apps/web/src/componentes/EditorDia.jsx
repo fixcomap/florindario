@@ -140,7 +140,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
           {sinHorario.map((t) => (
             <button key={t.id} type="button" className={eleccion === t.id ? 'activo' : ''} aria-pressed={eleccion === t.id}
               style={eleccion === t.id ? { background: t.fondo, borderColor: t.color, color: t.color } : undefined}
-              onClick={() => setEleccion(t.id)}><Personaje tipo={t.personaje} className="miniatura" />{t.nombre}</button>
+              onClick={() => setEleccion(t.id)}>{t.personaje ? <Personaje tipo={t.personaje} className="miniatura" /> : <span className="miniatura sin-dibujo" aria-hidden="true">{t.icono}</span>}{t.nombre}</button>
           ))}
         </div>
 

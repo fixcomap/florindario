@@ -3,7 +3,7 @@
 
 class ErrorValidacion extends Error {}
 
-const TIPOS = ['trabajo', 'libre', 'vacaciones', 'festivo', 'baja', 'compensado'];
+const TIPOS = ['trabajo', 'libre', 'vacaciones', 'festivo', 'baja', 'compensado', 'disposicion'];
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -100,6 +100,7 @@ function plantilla(body) {
   if (nombre.length < 2 || nombre.length > 40) throw new ErrorValidacion('nombre: entre 2 y 40 caracteres');
   if (!Array.isArray(body?.dias) || body.dias.length !== 7) throw new ErrorValidacion('dias: uno por día de la semana (7)');
   if (body.dias.some((d) => d?.tipo === 'compensado')) throw new ErrorValidacion('plantilla: el libre compensado se carga día a día');
+  if (body.dias.some((d) => d?.tipo === 'disposicion')) throw new ErrorValidacion('plantilla: los días de libre disposición se cargan día a día');
   const dias = body.dias.map((d) => (d == null ? null : (({ tipo: t, tramos: tr }) => ({ tipo: t, tramos: tr }))(dia(d))));
   if (dias.every((d) => d === null)) throw new ErrorValidacion('dias: cargá al menos un día');
   return { nombre, dias };
