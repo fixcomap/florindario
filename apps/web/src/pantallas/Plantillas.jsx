@@ -3,6 +3,7 @@ import { pedir } from '../api.js';
 import { resumen } from '../plantillas.js';
 import { TIPOS } from '../datos/tipos.js';
 import { horas } from '../horas.js';
+import { DIAS_CORTOS } from '../fechas.js';
 import Tramos from '../componentes/Tramos.jsx';
 import Duracion from '../componentes/Duracion.jsx';
 
@@ -154,19 +155,45 @@ function EditorJornada({ inicial, cerrar }) {
   );
 }
 
+// Días iguales de la plantilla juntos en un horario: [{ dias: [0..6], dia }]. Los
+// días que no están en ningún horario no se tocan al aplicarla.
+function agruparDias(dias) {
+  const grupos = [];
+  dias.forEach((d, i) => {
+    if (!d) return;
+    const clave = JSON.stringify(d);
+    const g = grupos.find((x) => JSON.stringify(x.dia) === clave);
+    if (g) g.dias.push(i);
+    else grupos.push({ dias: [i], dia: d });
+  });
+  return grupos.length ? grupos : [{ dias: [], dia: { tipo: 'trabajo', tramos: [{ inicio: '09:00', fin: '13:00' }] } }];
+}
+
 function EditorPlantilla({ inicial, jornadas, cerrar }) {
   const [nombre, setNombre] = useState(inicial.nombre);
-  const [dias, setDias] = useState(inicial.dias);
+  const [grupos, setGrupos] = useState(() => agruparDias(inicial.dias));
   const [jornadaId, setJornadaId] = useState(inicial.jornadaId || '');
   const [error, setError] = useState('');
-  const cambiarDia = (i, d) => setDias(dias.map((x, k) => (k === i ? d : x)));
-  const copiarLunes = () => setDias(dias.map((d, i) => (i < 5 ? dias[0] : d)));
+  const dias = Array.from({ length: 7 }, (_, i) => grupos.find((g) => g.dias.includes(i))?.dia || null);
+  const cambiarGrupo = (k, g) => setGrupos(grupos.map((x, n) => (n === k ? g : x)));
 
-  function cambiarTipo(i, valor) {
-    if (!valor) return cambiarDia(i, null);
-    const anterior = dias[i]?.tipo === 'trabajo' ? dias[i].tramos : null;
-    cambiarDia(i, { tipo: valor, tramos: valor === 'trabajo' ? anterior || [{ inicio: '09:00', fin: '13:00' }] : [] });
+  // Un día está como mucho en un horario: al marcarlo en uno se quita de los demás.
+  function alternarDia(k, i) {
+    const marcado = grupos[k].dias.includes(i);
+    setGrupos(grupos.map((g, n) => {
+      if (n === k) return { ...g, dias: marcado ? g.dias.filter((x) => x !== i) : [...g.dias, i].sort() };
+      return marcado ? g : { ...g, dias: g.dias.filter((x) => x !== i) };
+    }));
   }
+
+  function cambiarTipo(k, valor) {
+    const g = grupos[k];
+    const anterior = g.dia.tipo === 'trabajo' ? g.dia.tramos : null;
+    cambiarGrupo(k, { ...g, dia: { tipo: valor, tramos: valor === 'trabajo' ? anterior || [{ inicio: '09:00', fin: '13:00' }] : [] } });
+  }
+
+  const libres = [0, 1, 2, 3, 4, 5, 6].filter((i) => !dias[i]);
+  const otroHorario = () => setGrupos([...grupos, { dias: [], dia: { tipo: 'libre', tramos: [] } }]);
 
   async function guardar() {
     setError('');
@@ -193,20 +220,26 @@ function EditorPlantilla({ inicial, jornadas, cerrar }) {
         </select>
       </label>
       <ul className="semana-plantilla">
-        {dias.map((d, i) => (
-          <li key={i}>
+        {grupos.map((g, k) => (
+          <li key={k}>
+            <div className="dias-horario" role="group" aria-label={`Días del horario ${k + 1}`}>
+              {DIAS_CORTOS.map((c, i) => (
+                <button key={i} type="button" className={`dia-chip${g.dias.includes(i) ? ' activo' : ''}`}
+                  aria-pressed={g.dias.includes(i)} aria-label={DIAS[i]} onClick={() => alternarDia(k, i)}>{c}</button>
+              ))}
+            </div>
             <div className="fila-dia">
-              <strong>{DIAS[i]}</strong>
-              <select value={d?.tipo || ''} onChange={(e) => cambiarTipo(i, e.target.value)} aria-label={`Tipo del ${DIAS[i]}`}>
-                <option value="">— No tocar</option>
+              <select value={g.dia.tipo} onChange={(e) => cambiarTipo(k, e.target.value)} aria-label={`Tipo del horario ${k + 1}`}>
                 {TIPOS.filter((t) => t.id !== 'compensado').map((t) => <option key={t.id} value={t.id}>{t.icono} {t.nombre}</option>)}
               </select>
+              {grupos.length > 1 && <button type="button" className="enlace" onClick={() => setGrupos(grupos.filter((_, n) => n !== k))}>Quitar</button>}
             </div>
-            {d?.tipo === 'trabajo' && <Tramos compacto tramos={d.tramos} cambiar={(tramos) => cambiarDia(i, { ...d, tramos })} />}
-            {i === 0 && <button type="button" className="enlace" onClick={copiarLunes}>Copiar el lunes de martes a viernes</button>}
+            {g.dia.tipo === 'trabajo' && <Tramos compacto tramos={g.dia.tramos} cambiar={(tramos) => cambiarGrupo(k, { ...g, dia: { ...g.dia, tramos } })} />}
           </li>
         ))}
       </ul>
+      <button type="button" className="chip" onClick={otroHorario}>+ Otro horario</button>
+      {libres.length > 0 && <p className="tenue">Sin tocar al aplicarla: {libres.map((i) => DIAS[i].toLowerCase()).join(', ')}.</p>}
       <p className="tenue">{resumen({ dias })}</p>
       {error && <p className="error">{error}</p>}
       <div className="acciones">

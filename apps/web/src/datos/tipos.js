@@ -3,9 +3,9 @@ export const TIPOS = [
   { id: 'trabajo', nombre: 'Trabajo', color: '#8a6500', fondo: '#fdf0c4', icono: '💼' },
   { id: 'libre', nombre: 'Libre', color: '#3f7a4b', fondo: '#e2f0e2', icono: '🌿', personaje: 'libre' },
   { id: 'vacaciones', nombre: 'Vacaciones', color: '#16737f', fondo: '#dbf0f2', icono: '🌻', personaje: 'vacaciones' },
-  { id: 'festivo', nombre: 'Festivo', color: '#7d6db7', fondo: '#ebe7f7', icono: '🎉' },
+  { id: 'festivo', nombre: 'Festivo', color: '#7d6db7', fondo: '#ebe7f7', icono: '🎉', personaje: 'festivo' },
   { id: 'baja', nombre: 'Baja', color: '#6a5aa8', fondo: '#ece8f8', icono: '🩹', personaje: 'baja' },
-  { id: 'compensado', nombre: 'Libre compensado', color: '#2f8f8a', fondo: '#dff1ef', icono: '🔄' },
+  { id: 'compensado', nombre: 'Libre compensado', color: '#2f8f8a', fondo: '#dff1ef', icono: '🔄', personaje: 'compensado' },
 ];
 
 export const tipo = (id) => TIPOS.find((t) => t.id === id);
