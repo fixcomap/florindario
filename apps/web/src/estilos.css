@@ -327,3 +327,23 @@ select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--bord
 .resumen-anio .contador + .contador { margin-top: 10px; }
 .miniatura.sin-dibujo { display: inline-grid; place-items: center; background: var(--fondo); font-size: 0.9rem; }
 .personaje-disposicion { filter: hue-rotate(-55deg) saturate(0.9); }
+
+/* Año: cifras, barras de horas por mes y contadores. */
+.resumen-anio h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ver-anio { font-family: system-ui, sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--acento); }
+.anio-titulo { margin: 0; font-family: var(--rotulo); font-weight: 400; font-size: 2.2rem; letter-spacing: 1px; }
+.cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 6px 0 12px; }
+.cifras div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 14px; background: var(--panel); }
+.cifras small { color: var(--tenue); font-size: 0.78rem; }
+.cifras strong { font-family: var(--titulo); font-size: 1.35rem; font-weight: 600; }
+.grafico-meses { padding: 12px 14px; border: 1px solid var(--borde); border-radius: 14px; background: var(--panel); }
+.grafico-meses h2 { margin: 0; font-family: var(--titulo); font-weight: 600; font-size: 1.1rem; }
+.dato-mes { margin: 4px 0 10px; color: var(--tenue); }
+.dato-mes span { text-transform: capitalize; }
+.dato-mes strong { color: var(--tinta); font-family: var(--titulo); font-size: 1.2rem; }
+.barras { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; height: 170px; border-bottom: 1px solid var(--borde); }
+.barra-mes { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 0 2px 18px; border: 0; background: none; cursor: pointer; }
+.barra-mes .relleno { display: block; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--acento); opacity: 0.45; transition: opacity 0.15s; }
+.barra-mes.elegida .relleno, .barra-mes:hover .relleno { opacity: 1; }
+.barra-mes .letra { position: absolute; left: 0; right: 0; bottom: 0; font-size: 0.72rem; font-weight: 600; color: var(--tenue); text-align: center; }
+.barra-mes.elegida .letra { color: var(--tinta); }
