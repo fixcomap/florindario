@@ -92,3 +92,18 @@ test('jornada de la extra y del compensado', () => {
   assert.strictEqual(dia({ tipo: 'libre', compensaJornadaId: 3 }).compensaJornadaId, null);
   assert.throws(() => dia({ ...t8, extra: { minutos: 60, pago: 'horas', jornadaId: 'x' } }), E);
 });
+
+test('libre disposición: día sin tramos, no en plantillas', () => {
+  const { plantilla } = require('../src/validar');
+  assert.deepStrictEqual(dia({ tipo: 'disposicion', tramos: [{ inicio: '09:00', fin: '13:00' }] }).tramos, []);
+  const semana = (d) => ({ nombre: 'Prueba', dias: [d, null, null, null, null, null, null] });
+  assert.throws(() => plantilla(semana({ tipo: 'disposicion', tramos: [] })), E);
+  assert.throws(() => plantilla(semana({ tipo: 'compensado', tramos: [], compensa: 60 })), E);
+  assert.strictEqual(plantilla(semana({ tipo: 'libre', tramos: [] })).dias[0].tipo, 'libre');
+});
+
+test('rango de lectura: orden y como mucho ~2 meses y medio', () => {
+  assert.deepStrictEqual(rango('2026-10-01', '2026-10-31'), ['2026-10-01', '2026-10-31']);
+  assert.throws(() => rango('2026-10-31', '2026-10-01'), E);
+  assert.throws(() => rango('2026-01-01', '2026-06-01'), E);
+});

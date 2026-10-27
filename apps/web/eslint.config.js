@@ -20,6 +20,6 @@ export default [
       'no-unused-vars': ['error', { ignoreRestSiblings: true }],
     },
   },
-  // La config de Vite corre en Node.
-  { files: ['vite.config.js'], languageOptions: { globals: globals.node } },
+  // Las configs de Vite y Vitest corren en Node.
+  { files: ['vite.config.js', 'vitest.config.js'], languageOptions: { globals: globals.node } },
 ];
