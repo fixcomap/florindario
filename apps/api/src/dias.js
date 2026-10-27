@@ -2,7 +2,7 @@
 const express = require('express');
 const pool = require('./db');
 const { protegerApp } = require('./cuentas');
-const { ErrorValidacion, fecha, fechaEditable, dia, rango, lote } = require('./validar');
+const { ErrorValidacion, fecha, fechaEditable, dia, rango, lote, minutosDelDia } = require('./validar');
 
 const COLUMNAS = `to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, tramos, nota, extra_minutos, extra_pago, extra_cobrada, compensa_minutos,
   extra_jornada_id::text, compensa_jornada_id::text, jornada_id::text`;
@@ -92,6 +92,37 @@ router.put('/dias', manejar(async (req, res) => {
   } finally {
     cliente.release();
   }
+}));
+
+// Días de cada tipo en un año (vacaciones gastadas, bajas, festivos...).
+router.use('/resumen', protegerApp);
+router.get('/resumen', manejar(async (req, res) => {
+  const anio = Number(req.query.anio);
+  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: 'anio: un año entre 2000 y 2100' });
+  const { rows } = await pool.query(
+    `SELECT tipo, count(*)::int AS dias, count(*) FILTER (WHERE extract(isodow FROM fecha) <= 5)::int AS habiles FROM dias
+     WHERE usuario_id = $1 AND fecha >= make_date($2, 1, 1) AND fecha < make_date($2 + 1, 1, 1)
+     GROUP BY tipo`,
+    [req.usuario.id, anio]
+  );
+  // vacaciones: según cómo las cuenta el usuario (hábiles = de lunes a viernes; los festivos ya son otro tipo).
+  const dias = Object.fromEntries(rows.map((r) => [r.tipo, r.dias]));
+  const vac = rows.find((r) => r.tipo === 'vacaciones');
+  if (vac) dias.vacaciones = req.usuario.vacaciones_computo === 'naturales' ? vac.dias : vac.habiles;
+  // Horas trabajadas y extra de cada mes (enero = 0).
+  const trabajo = await pool.query(
+    `SELECT extract(month FROM fecha)::int - 1 AS mes, tramos, extra_minutos, extra_pago FROM dias
+     WHERE usuario_id = $1 AND tipo = 'trabajo' AND fecha >= make_date($2, 1, 1) AND fecha < make_date($2 + 1, 1, 1)`,
+    [req.usuario.id, anio]
+  );
+  const meses = Array.from({ length: 12 }, (_, mes) => ({ mes, minutos: 0, extraDinero: 0, extraHoras: 0 }));
+  for (const f of trabajo.rows) {
+    const m = meses[f.mes];
+    m.minutos += minutosDelDia({ tipo: 'trabajo', tramos: f.tramos });
+    if (f.extra_pago === 'dinero') m.extraDinero += f.extra_minutos;
+    if (f.extra_pago === 'horas') m.extraHoras += f.extra_minutos;
+  }
+  res.json({ anio, dias, meses });
 }));
 
 // Horas extra de siempre: lo pagado (cobrado o no) y la bolsa de horas libres.

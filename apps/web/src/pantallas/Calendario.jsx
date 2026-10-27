@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { pedir } from '../api.js';
 import { DIAS_CORTOS, desdeIso, hoy, iso, nombreMes, semanasDelMes } from '../fechas.js';
 import { horas, horasCortas, minutosDelDia, tramoCorto } from '../horas.js';
@@ -10,6 +10,7 @@ import HojaNota from '../componentes/HojaNota.jsx';
 import { aspecto } from '../datos/tipos.js';
 import Personaje from '../componentes/Personaje.jsx';
 import FlechaMes from '../componentes/FlechaMes.jsx';
+import ResumenAnio from '../componentes/ResumenAnio.jsx';
 import EditorDia from '../componentes/EditorDia.jsx';
 import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
 
@@ -53,6 +54,11 @@ export default function Calendario({ usuario }) {
       .catch((err) => setError(err.message));
   }, [desde, hasta]);
   useEffect(cargar, [cargar]);
+  // Días de cada tipo en el año del mes visible; se recalcula al cargar o cambiar días.
+  const [resumen, setResumen] = useState(null);
+  useEffect(() => {
+    pedir(`/resumen?anio=${mes.anio}`).then(setResumen).catch(() => setResumen(null));
+  }, [mes.anio, dias]);
   // Mes anterior: sus domingos pagados a mes vencido entran en el sueldo de este mes.
   const anterior = new Date(mes.anio, mes.mes - 1, 1);
   const mesAnterior = MESES_NOMBRE[anterior.getMonth()];
@@ -78,7 +84,30 @@ export default function Calendario({ usuario }) {
     pedir('/sueldo').then(setTarifas).catch(() => setTarifas(null));
   }, []);
 
-  const mover = (n) => setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
+  // Dirección del último cambio de mes: el nuevo entra desde ese lado.
+  const [direccion, setDireccion] = useState(0);
+  const mover = (n) => {
+    setDireccion(n);
+    setMes(({ anio, mes: m }) => ({ anio: anio + Math.floor((m + n) / 12), mes: (m + n + 12) % 12 }));
+  };
+  const ahoraMismo = new Date();
+  const esMesActual = mes.anio === ahoraMismo.getFullYear() && mes.mes === ahoraMismo.getMonth();
+  const irAHoy = () => {
+    setDireccion(mes.anio * 12 + mes.mes < ahoraMismo.getFullYear() * 12 + ahoraMismo.getMonth() ? 1 : -1);
+    setMes({ anio: ahoraMismo.getFullYear(), mes: ahoraMismo.getMonth() });
+  };
+
+  // Deslizar el mes en horizontal cambia de mes; un toque o un desplazamiento vertical no.
+  const inicioToque = useRef(null);
+  const tocarInicio = (e) => { const t = e.touches[0]; inicioToque.current = { x: t.clientX, y: t.clientY }; };
+  const tocarFin = (e) => {
+    const i = inicioToque.current;
+    inicioToque.current = null;
+    if (!i) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - i.x;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(t.clientY - i.y)) mover(dx < 0 ? 1 : -1);
+  };
   const delMes = (f) => desdeIso(f).getMonth() === mes.mes;
   const gruposMes = agrupar(notas.filter((n) => n.fijada || !n.fechas.length || n.fechas.some(delMes)));
   const delMesCargados = Object.values(dias).filter((d) => delMes(d.fecha));
@@ -121,12 +150,32 @@ export default function Calendario({ usuario }) {
     terminar();
   };
 
+  // Nombre completo en vertical, mismo tamaño de letra siempre: si no cabe en el alto
+  // del mes (meses largos o de 4 semanas), se comprime en vertical lo justo.
+  const marcoRef = useRef(null);
+  const mesRef = useRef(null);
+  useLayoutEffect(() => {
+    const marco = marcoRef.current;
+    const texto = mesRef.current;
+    if (!marco || !texto) return undefined;
+    const ajustar = () => texto.style.setProperty('--compresion', Math.min(1, (marco.clientHeight * 0.96) / texto.offsetHeight));
+    ajustar();
+    const observador = new ResizeObserver(ajustar);
+    observador.observe(marco);
+    document.fonts?.ready.then(ajustar);
+    return () => observador.disconnect();
+  });
+  const nombreMesSolo = nombreMes(mes.anio, mes.mes).split(' ')[0];
+
   return (
     <main className="con-barra">
       <div className="mes">
         <FlechaMes onClick={() => mover(-1)} />
         <h1 className="solo-lectores">{nombreMes(mes.anio, mes.mes)}</h1>
-        <span className="anio" aria-hidden="true">{mes.anio}</span>
+        <span className="centro-mes">
+          <span className="anio" aria-hidden="true">{mes.anio}</span>
+          {!esMesActual && <button type="button" className="hoy-boton" onClick={irAHoy}>Hoy</button>}
+        </span>
         <FlechaMes siguiente onClick={() => mover(1)} />
       </div>
       {eligiendo && (
@@ -137,9 +186,9 @@ export default function Calendario({ usuario }) {
       )}
       {error && <p className="error">{error}</p>}
 
-      <div className="marco-mes">
-        <span className="mes-gigante" aria-hidden="true">{nombreMes(mes.anio, mes.mes).slice(0, 3)}</span>
-        <div className="cuadricula" role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
+      <div className="marco-mes" ref={marcoRef} onTouchStart={tocarInicio} onTouchEnd={tocarFin}>
+        <span key={nombreMesSolo} className="mes-gigante" aria-hidden="true" ref={mesRef}>{nombreMesSolo}</span>
+        <div key={`${mes.anio}-${mes.mes}`} className={`cuadricula${direccion ? ` entra-${direccion > 0 ? 'derecha' : 'izquierda'}` : ''}`} role="grid" aria-label={nombreMes(mes.anio, mes.mes)}>
           {DIAS_CORTOS.map((d) => <div key={d} className="cabeza">{d}</div>)}
           <div className="cabeza">h</div>
           {semanas.map((semana) => (
@@ -150,6 +199,8 @@ export default function Calendario({ usuario }) {
       </div>
 
       <p className="total-mes">Este mes: <strong>{horas(totalMes)}</strong></p>
+      <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
+      {resumen && <ResumenAnio resumen={resumen} usuario={usuario} />}
 
       {(extraMes.pagadas > 0 || extraMes.bolsa > 0 || usadasMes > 0 || extras?.bolsa.saldo || delMesCargados.some((d) => domingoLibre(d, jornadas))) ? (
         <section className="panel-extra">
@@ -176,7 +227,6 @@ export default function Calendario({ usuario }) {
           {extras?.dinero.sinCobrar > 0 && <p className="tenue">Sin cobrar en total: {horas(extras.dinero.sinCobrar)}</p>}
         </section>
       ) : null}
-      <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
 
       {tarifas !== undefined && <SueldoMes tarifas={tarifas} dias={delMesCargados} jornadas={jornadas} diasAnterior={diasAnterior} mesAnterior={mesAnterior} />}
 

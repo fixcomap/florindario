@@ -34,3 +34,19 @@ export function fechasTexto(fechas) {
   const lista = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs.at(-1)}` : String(xs[0]));
   return porMes.map((m) => `${lista(m.dias)} ${m.etiqueta}`).join(', ');
 }
+
+// Fecha de una nota en grande (los días, "11, 12, 13") y pequeño (el mes, "OCT"); con
+// varios meses, "28, 30 · 3" y "OCT · NOV". `tam` encoge la letra cuantos más días hay.
+export function etiquetaFechas(fechas) {
+  if (!fechas.length) return { grande: 'General', chico: 'del mes', tam: 'normal' };
+  const porMes = [];
+  for (const d of fechas.map(desdeIso)) {
+    const ultimo = porMes.at(-1);
+    if (ultimo && ultimo.mes === d.getMonth() && ultimo.anio === d.getFullYear()) ultimo.dias.push(d.getDate());
+    else porMes.push({ mes: d.getMonth(), anio: d.getFullYear(), dias: [d.getDate()] });
+  }
+  const grande = porMes.map((m) => m.dias.join(', ')).join(' · ');
+  const chico = porMes.map((m) => MESES[m.mes].toUpperCase()).join(' · ');
+  const tam = grande.length <= 2 ? 'normal' : grande.length <= 6 ? 'media' : grande.length <= 14 ? 'chica' : 'mini';
+  return { grande, chico, tam };
+}

@@ -5,6 +5,7 @@ import Calendario from './pantallas/Calendario.jsx';
 import Alta from './pantallas/Alta.jsx';
 import Cuenta from './pantallas/Cuenta.jsx';
 import Plantillas from './pantallas/Plantillas.jsx';
+import Anio from './pantallas/Anio.jsx';
 import { Privacidad, Terminos } from './pantallas/Legal.jsx';
 
 export default function App() {
@@ -35,7 +36,7 @@ export default function App() {
           {usuario?.estado === 'suspendida' && (
             <p className="centro">Tu cuenta está suspendida por actividad anómala. Escribinos a contacto@fixcomap.com.</p>
           )}
-          {usuario?.estado === 'activa' && (ruta === '/cuenta' ? <Cuenta usuario={usuario} cambiar={setUsuario} /> : ruta === '/plantillas' ? <Plantillas /> : <Calendario usuario={usuario} />)}
+          {usuario?.estado === 'activa' && (ruta === '/cuenta' ? <Cuenta usuario={usuario} cambiar={setUsuario} /> : ruta === '/plantillas' ? <Plantillas /> : ruta === '/anio' ? <Anio usuario={usuario} /> : <Calendario usuario={usuario} />)}
         </>
       )}
     </div>
