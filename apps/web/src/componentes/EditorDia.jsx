@@ -113,9 +113,9 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
         {grupos.length > 1 && (
           <>
             <p className="paso">Jornada</p>
-            <div className="selector-jornada">
+            <div className="selector-jornada con-dibujo">
               {grupos.map((g) => (
-                <button key={g.id ?? 'sin'} type="button" className={g === grupo ? 'activo' : ''} aria-pressed={g === grupo} onClick={() => elegirGrupo(g)}><Personaje tipo={aspecto({ tipo: 'trabajo', jornadaId: g.id }, jornadas).personaje} className="miniatura" />{g.nombre}</button>
+                <button key={g.id ?? 'sin'} type="button" className={g === grupo ? 'activo' : ''} aria-pressed={g === grupo} onClick={() => elegirGrupo(g)}><Personaje tipo={aspecto({ tipo: 'trabajo', jornadaId: g.id }, jornadas).personaje} className="dibujo" />{g.nombre}</button>
               ))}
             </div>
           </>
@@ -136,11 +136,11 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
         {!turnos.length && <p className="tenue pista">Creá <a href="/plantillas">plantillas</a> y tus turnos aparecen acá para cargarlos con un toque.</p>}
         {eleccion === 'otro' && <Tramos tramos={propios} cambiar={setPropios} />}
 
-        <div className="tipos sin-horario">
+        <div className="tipos sin-horario con-dibujo">
           {sinHorario.map((t) => (
             <button key={t.id} type="button" className={eleccion === t.id ? 'activo' : ''} aria-pressed={eleccion === t.id}
               style={eleccion === t.id ? { background: t.fondo, borderColor: t.color, color: t.color } : undefined}
-              onClick={() => setEleccion(t.id)}>{t.personaje ? <Personaje tipo={t.personaje} className="miniatura" /> : <span className="miniatura sin-dibujo" aria-hidden="true">{t.icono}</span>}{t.nombre}</button>
+              onClick={() => setEleccion(t.id)}>{t.personaje ? <Personaje tipo={t.personaje} className="dibujo" /> : <span className="miniatura sin-dibujo" aria-hidden="true">{t.icono}</span>}{t.nombre}</button>
           ))}
         </div>
 
