@@ -285,7 +285,8 @@ function Semana({ semana, dias, delMes, tocar, notasPorFecha, modoBolsa, jornada
                 {d.tipo === 'trabajo' ? d.tramos.map((tr) => <span key={tr.inicio}>{tramoCorto(tr)}</span>) : !t.personaje && <span>{t.icono}</span>}
               </span>
             )}
-            {t?.personaje && <Personaje tipo={t.personaje} className="personaje" />}
+            {/* Los días de trabajo ya llevan horario y horas: solo el color, sin dibujo. */}
+            {t?.personaje && d.tipo !== 'trabajo' && <Personaje tipo={t.personaje} className="personaje" />}
             {minutosDelDia(d) > 0 && <span className="horas-dia">{horasCortas(minutosDelDia(d))}</span>}
             {!d?.extra && domingoLibre(d, jornadas) > 0 && (
               <span className="marca-extra horas">+{String(domingoLibre(d, jornadas) / jornadas.find((j) => j.id === d.jornadaId).minutosDia).replace('.5', ',5')}d</span>

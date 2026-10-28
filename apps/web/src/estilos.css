@@ -100,6 +100,8 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 80% 40%
 /* El personaje ocupa todo el día, muy tenue y por detrás del número, el horario y las marcas. */
 .dia { position: relative; overflow: hidden; isolation: isolate; }
 .dia .personaje { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; opacity: 0.28; pointer-events: none; }
+/* La de libre es apagada (verdes grises, de noche): un poco más presente para igualarla a las demás. */
+.dia .personaje-libre { opacity: 0.36; }
 /* Móvil: el día es estrecho y el recorte centrado deja fuera a la persona en las imágenes apaisadas. */
 @media (max-width: 600px) {
   .dia .personaje-j1 { object-position: 72% center; }
@@ -315,6 +317,7 @@ select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--bord
 .resumen-anio .contador + .contador { margin-top: 10px; }
 .miniatura.sin-dibujo { display: inline-grid; place-items: center; background: var(--fondo); font-size: 0.9rem; }
 .personaje-disposicion { filter: hue-rotate(-55deg) saturate(0.9); }
+.personaje-libre { filter: brightness(1.08) contrast(1.15) saturate(1.2); }
 
 /* Año: cifras, barras de horas por mes y contadores. */
 .resumen-anio h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -388,3 +391,21 @@ select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--bord
 .pie-nota { display: flex; justify-content: space-between; align-items: center; }
 .borrar-nota { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border: 0; border-radius: 10px; background: none; color: var(--rojo); font: inherit; font-weight: 600; cursor: pointer; }
 .borrar-nota svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Hoja del día: cada opción es su ilustración, a todo el botón, con el nombre escrito encima. */
+.con-dibujo { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; overflow: visible; }
+.sin-horario.con-dibujo { grid-template-columns: repeat(3, 1fr); }
+.con-dibujo button { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; min-height: 88px; padding: 0; border: 2px solid transparent; border-radius: 14px; text-align: center; line-height: 1.15; }
+.con-dibujo .dibujo { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; }
+/* Recorte de cada dibujo centrado en la cara (el botón es más apaisado que la mayoría). */
+.con-dibujo .personaje-j1 { object-position: 78% 22%; }
+.con-dibujo .personaje-j2 { object-position: 40% 22%; }
+.con-dibujo .personaje-baja { object-position: 50% 26%; }
+.con-dibujo .personaje-vacaciones, .con-dibujo .personaje-disposicion { object-position: 55% 18%; }
+.con-dibujo .personaje-compensado { object-position: 60% 12%; }
+.con-dibujo .personaje-festivo { object-position: 50% 32%; }
+.con-dibujo .personaje-libre { object-position: 30% 55%; }
+/* El nombre en una etiqueta clara sobre el dibujo: se lee sobre cualquiera, sin sombras. */
+.con-dibujo .etiqueta { align-self: center; max-width: calc(100% - 10px); margin-bottom: 6px; padding: 3px 9px; border-radius: 999px; background: rgb(255 255 255 / 0.9); color: var(--tinta); font-size: 0.8rem; font-weight: 600; }
+.con-dibujo button.activo .etiqueta { background: var(--acento); color: #fff; }
+.con-dibujo button.activo { border-color: var(--acento); box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--acento); }
