@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { pedir } from '../api.js';
+import { borrarDatosLocales, pedir } from '../api.js';
 import AjustesSueldo from '../componentes/AjustesSueldo.jsx';
 
 const COMPUTO = [
@@ -20,6 +20,7 @@ export default function Cuenta({ usuario, cambiar }) {
     if (!window.confirm('Se borra tu cuenta y todo tu calendario, sin vuelta atrás. ¿Seguro?')) return;
     try {
       await pedir('/cuenta', { method: 'DELETE' });
+      await borrarDatosLocales();
       window.location.assign('/');
     } catch (err) {
       setError(err.message);
@@ -70,10 +71,10 @@ export default function Cuenta({ usuario, cambiar }) {
         <p className="tenue">Días libres que eliges tú. Se marcan en el calendario como «Libre disposición».</p>
       </section>
       <AjustesSueldo />
-      <p><a href="/terminos">Términos de uso</a> · <a href="/privacidad">Política de privacidad</a></p>
       <button className="boton secundario peligro" onClick={borrar}>Borrar mi cuenta</button>
       {error && <p className="error">{error}</p>}
-      <p><a href="/">← Volver al calendario</a></p>
+      <a className="volver" href="/">‹ Volver al calendario</a>
+      <p className="legal-pie"><a href="/terminos">Términos de uso</a><a href="/privacidad">Política de privacidad</a></p>
     </main>
   );
 }
