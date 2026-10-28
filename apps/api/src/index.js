@@ -34,8 +34,11 @@ app.use(rateLimit({
 // Además: cookies SameSite=lax, CORS solo para el front y cuerpos solo en JSON.
 app.use((req, res, next) => {
   const origen = req.get('Origin');
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || !origen || origen === config.frontUrl) return next();
-  res.status(403).json({ error: 'Origen no permitido' });
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  if (origen && origen !== config.frontUrl) return res.status(403).json({ error: 'Origen no permitido' });
+  // Segunda capa: un formulario de otro sitio no puede mandar JSON sin pasar por CORS.
+  if (req.headers['content-length'] > 0 && !req.is('application/json')) return res.status(415).json({ error: 'Solo se acepta JSON' });
+  next();
 });
 app.use(express.json({ limit: '20kb' }));
 app.use(cookieParser());
@@ -70,6 +73,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Algo salió mal. Probá de nuevo en un rato.' });
 });
 
-app.listen(config.puerto, () => {
-  console.log(`API escuchando en el puerto ${config.puerto}`);
-});
+// Ejecutada directamente (Cloud Run, npm run dev) escucha; requerida (tests), solo exporta la app.
+if (require.main === module) {
+  app.listen(config.puerto, () => {
+    console.log(`API escuchando en el puerto ${config.puerto}`);
+  });
+}
+
+module.exports = app;
