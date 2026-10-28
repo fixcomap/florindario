@@ -55,7 +55,8 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
   const elegirGrupo = (g) => {
     setGrupoId(g.id);
     const primero = deGrupo(g)[0];
-    if (eleccion.startsWith('p:') || eleccion === 'otro') setEleccion(primero ? `p:${primero.id}` : 'otro');
+    // Tocar una jornada es cargar trabajo en ella: deja de ser libre, baja, etc.
+    setEleccion(primero ? `p:${primero.id}` : 'otro');
   };
   const tipoDia = turno || eleccion === 'otro' ? 'trabajo' : eleccion;
   const [propios, setPropios] = useState(dia?.tipo === 'trabajo' ? dia.tramos : [TRAMO]);
@@ -115,7 +116,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
             <p className="paso">Jornada</p>
             <div className="selector-jornada con-dibujo">
               {grupos.map((g) => (
-                <button key={g.id ?? 'sin'} type="button" className={g === grupo ? 'activo' : ''} aria-pressed={g === grupo} onClick={() => elegirGrupo(g)}><Personaje tipo={aspecto({ tipo: 'trabajo', jornadaId: g.id }, jornadas).personaje} className="dibujo" />{g.nombre}</button>
+                <button key={g.id ?? 'sin'} type="button" className={g === grupo && tipoDia === 'trabajo' ? 'activo' : ''} aria-pressed={g === grupo && tipoDia === 'trabajo'} onClick={() => elegirGrupo(g)}><Personaje tipo={aspecto({ tipo: 'trabajo', jornadaId: g.id }, jornadas).personaje} className="dibujo" /><span className="etiqueta">{g.nombre}</span></button>
               ))}
             </div>
           </>
@@ -139,8 +140,7 @@ export default function EditorDia({ fechas, dia, plantillas = [], jornadas = [],
         <div className="tipos sin-horario con-dibujo">
           {sinHorario.map((t) => (
             <button key={t.id} type="button" className={eleccion === t.id ? 'activo' : ''} aria-pressed={eleccion === t.id}
-              style={eleccion === t.id ? { background: t.fondo, borderColor: t.color, color: t.color } : undefined}
-              onClick={() => setEleccion(t.id)}>{t.personaje ? <Personaje tipo={t.personaje} className="dibujo" /> : <span className="miniatura sin-dibujo" aria-hidden="true">{t.icono}</span>}{t.nombre}</button>
+              onClick={() => setEleccion(t.id)}>{t.personaje ? <Personaje tipo={t.personaje} className="dibujo" /> : <span className="miniatura sin-dibujo" aria-hidden="true">{t.icono}</span>}<span className="etiqueta">{t.nombre}</span></button>
           ))}
         </div>
 
