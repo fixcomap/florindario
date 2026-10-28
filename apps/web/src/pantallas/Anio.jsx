@@ -69,7 +69,7 @@ export default function Anio({ usuario }) {
           <ResumenAnio resumen={resumen} usuario={usuario} enlace={false} />
         </>
       )}
-      <p><a href="/">← Volver al calendario</a></p>
+      <a className="volver" href="/">‹ Volver al calendario</a>
     </main>
   );
 }

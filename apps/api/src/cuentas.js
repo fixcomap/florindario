@@ -131,4 +131,4 @@ router.delete('/cuenta', requiereSesion, async (req, res, next) => {
   }
 });
 
-module.exports = { router, protegerApp, comprobarAltas, AltasCerradas, LIMITES };
+module.exports = { router, protegerApp, requiereActiva, comprobarAltas, AltasCerradas, LIMITES };

@@ -147,14 +147,16 @@ input:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
 
 /* ---------- cuenta, alta y legales ---------- */
 .menu { display: flex; gap: 14px; align-items: center; }
-.menu a { color: var(--acento); }
+.menu { gap: 8px; }
+.menu a, .menu .enlace { padding: 6px 14px; border: 1px solid var(--borde); border-radius: 999px; background: var(--panel); color: var(--tinta); font-size: 0.88rem; font-weight: 600; text-decoration: none; }
+.menu .enlace { color: var(--tenue); }
+.menu a:active, .menu .enlace:active { transform: scale(0.97); }
 .alta, .cuenta, .legal { padding: 4vh 6px 0; }
 .alta h1, .cuenta h1, .legal h1 { font-family: var(--titulo); font-weight: 600; font-size: 1.8rem; margin: 0 0 6px; }
 .legal h2 { font-family: var(--titulo); font-weight: 600; font-size: 1.15rem; margin: 20px 0 4px; }
 .legal p { line-height: 1.55; }
 .casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; color: var(--tinta); }
 .casilla input { width: auto; margin-top: 3px; }
-.legal-pie { margin-top: 18px; font-size: 0.85rem; }
 .legal-pie a, .alta a, .cuenta a, .legal a { color: var(--acento); }
 .boton.peligro { color: var(--rojo); border-color: #f0c8cf; }
 
@@ -409,3 +411,23 @@ select.unidad { padding: 10px 6px; margin-top: 4px; border: 1px solid var(--bord
 .con-dibujo .etiqueta { align-self: center; max-width: calc(100% - 10px); margin-bottom: 6px; padding: 3px 9px; border-radius: 999px; background: rgb(255 255 255 / 0.9); color: var(--tinta); font-size: 0.8rem; font-weight: 600; }
 .con-dibujo button.activo .etiqueta { background: var(--acento); color: #fff; }
 .con-dibujo button.activo { border-color: var(--acento); box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--acento); }
+
+.sin-red { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #fdf0c4; color: #6b4e00; font-size: 0.88rem; text-align: center; }
+
+.total-mes .exportar { float: left; padding: 5px 12px; border: 1px solid var(--borde); border-radius: 999px; background: var(--panel); color: var(--tinta); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+
+/* Invitación a cargar el sueldo: una tarjeta que se toca entera, no un enlace suelto. */
+.invitacion { display: flex; align-items: center; gap: 12px; color: var(--tinta); text-decoration: none; }
+.invitacion strong { display: block; font-family: var(--titulo); font-weight: 600; font-size: 1.05rem; }
+.invitacion small { display: block; margin-top: 2px; color: var(--tenue); font-size: 0.85rem; }
+.invitacion-icono { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: #fdf0f4; font-size: 1.3rem; }
+.invitacion-ir { margin-left: auto; color: var(--acento); font-size: 1.6rem; line-height: 1; }
+
+/* Volver: una pastilla como las del menú, no un enlace subrayado. */
+a.volver { display: inline-flex; align-items: center; gap: 6px; margin: 22px 0 6px; padding: 9px 16px 9px 12px; border: 1px solid var(--borde); border-radius: 999px; background: var(--panel); color: var(--tinta); font-size: 0.92rem; font-weight: 600; text-decoration: none; }
+a.volver:active { transform: scale(0.97); }
+/* Pie legal: discreto, centrado y sin subrayar; el punto separador lo pone el CSS. */
+.legal-pie { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 0; margin: 22px 0 8px; font-size: 0.8rem; }
+.legal-pie a, .cuenta .legal-pie a { color: var(--tenue); text-decoration: none; }
+.legal-pie a:hover { text-decoration: underline; }
+.legal-pie a + a::before { content: '·'; margin: 0 8px; color: var(--borde); }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { pedir, URL_API } from './api.js';
+import { borrarDatosLocales, pedir, URL_API } from './api.js';
 import Logo from './componentes/Logo.jsx';
 import Calendario from './pantallas/Calendario.jsx';
 import Alta from './pantallas/Alta.jsx';
@@ -12,10 +12,20 @@ export default function App() {
   const ruta = window.location.pathname;
   const [usuario, setUsuario] = useState(undefined); // undefined = cargando, null = sin sesión
   useEffect(() => {
-    pedir('/auth/yo').then(setUsuario).catch(() => setUsuario(null));
+    pedir('/auth/yo').then(setUsuario).catch((err) => {
+      setUsuario(null);
+      if (err.status === 401) borrarDatosLocales(); // sesión vencida o de otra persona
+    });
+  }, []);
+  const [enLinea, setEnLinea] = useState(navigator.onLine);
+  useEffect(() => {
+    const cambiar = () => setEnLinea(navigator.onLine);
+    window.addEventListener('online', cambiar);
+    window.addEventListener('offline', cambiar);
+    return () => { window.removeEventListener('online', cambiar); window.removeEventListener('offline', cambiar); };
   }, []);
 
-  const salir = () => pedir('/auth/salir', { method: 'POST' }).finally(() => window.location.assign('/'));
+  const salir = () => pedir('/auth/salir', { method: 'POST' }).finally(async () => { await borrarDatosLocales(); window.location.assign('/'); });
 
   return (
     <div className="app">
@@ -28,6 +38,7 @@ export default function App() {
           </nav>
         )}
       </header>
+      {!enLinea && <p className="sin-red">Sin conexión: ves lo último que cargaste. Para guardar cambios hace falta red.</p>}
       {ruta === '/terminos' ? <Terminos /> : ruta === '/privacidad' ? <Privacidad /> : (
         <>
           {usuario === undefined && <p className="centro tenue">Cargando…</p>}
@@ -54,7 +65,7 @@ function Bienvenida() {
       {error === 'acceso' && <p className="error">Este entorno es privado: tu cuenta no tiene acceso.</p>}
       {error === 'altas' && <p className="error">Ahora mismo hay muchas altas nuevas. Probá de nuevo en un rato.</p>}
       <a className="boton" href={`${URL_API}/auth/login`}>Entrar con Google</a>
-      <p className="legal-pie"><a href="/terminos">Términos</a> · <a href="/privacidad">Privacidad</a></p>
+      <p className="legal-pie"><a href="/terminos">Términos</a><a href="/privacidad">Privacidad</a></p>
     </main>
   );
 }
