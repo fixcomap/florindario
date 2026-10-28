@@ -4,3 +4,7 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Service worker: siempre la última versión (el navegador la compara en cada visita).
+/sw.js
+  Cache-Control: no-cache

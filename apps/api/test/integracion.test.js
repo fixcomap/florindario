@@ -63,6 +63,23 @@ test('API contra Postgres', { skip: !conBase && 'sin DATABASE_URL' }, async (t) 
     assert.strictEqual((await pedir('/resumen?anio=abc')).status, 400);
   });
 
+  await t.test('exportar: enlace firmado sin cookie, .ics y PDF', async () => {
+    const pdf = await pedir('/exportar/enlace', { method: 'POST', body: { formato: 'pdf', desde: '2026-03-01', hasta: '2026-03-31' } });
+    assert.strictEqual(pdf.status, 200);
+    const ruta = (url) => new URL(url).pathname;
+    let r = await fetch(`${base}${ruta(pdf.json.url)}`); // sin cookie: el enlace basta
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.headers.get('content-type'), 'application/pdf');
+    assert.strictEqual(Buffer.from(await r.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+    const ics = await pedir('/exportar/enlace', { method: 'POST', body: { formato: 'ics', desde: '2026-01-01', hasta: '2026-12-31' } });
+    r = await fetch(`${base}${ruta(ics.json.url)}`);
+    const texto = await r.text();
+    assert.match(r.headers.get('content-type'), /^text\/calendar/);
+    assert.ok(texto.includes('DTSTART:20260302T090000') && texto.includes('SUMMARY:Vacaciones'));
+    assert.strictEqual((await fetch(`${base}${ruta(ics.json.url)}x`)).status, 410);
+    assert.strictEqual((await pedir('/exportar/enlace', { method: 'POST', body: { formato: 'ics', desde: '2026-01-01', hasta: '2027-06-01' } })).status, 400);
+  });
+
   await t.test('CSRF: otro origen 403, cuerpo que no es JSON 415', async () => {
     const nota = { texto: 'x', mes: '2026-03' };
     assert.strictEqual((await pedir('/notas', { method: 'POST', body: nota, headers: { Origin: 'https://evil.example' } })).status, 403);

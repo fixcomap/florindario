@@ -5,7 +5,13 @@ import { estimar, euros } from '../sueldo.js';
 // plegada hasta que se toca.
 export default function SueldoMes({ tarifas, dias, jornadas, diasAnterior, mesAnterior }) {
   if (!tarifas) {
-    return <p className="tenue pista">💶 <a href="/cuenta">Cargá tu sueldo</a> para ver cuánto cobrarías este mes.</p>;
+    return (
+      <a className="panel-extra invitacion" href="/cuenta">
+        <span className="invitacion-icono" aria-hidden="true">💶</span>
+        <span><strong>Sueldo estimado</strong><small>Cargá tu sueldo y mirá cuánto cobrarías este mes</small></span>
+        <span className="invitacion-ir" aria-hidden="true">›</span>
+      </a>
+    );
   }
   const r = estimar(tarifas, dias, jornadas, diasAnterior, mesAnterior);
   return (

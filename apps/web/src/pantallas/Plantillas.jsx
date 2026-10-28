@@ -111,7 +111,7 @@ export default function Plantillas() {
       )}
 
       {jornadas.length > 0 && <button className="boton secundario" onClick={() => setJornada({ nombre: '', minutosDia: 480 })}>+ Nueva jornada</button>}
-      <p><a href="/">← Volver al calendario</a></p>
+      <a className="volver" href="/">‹ Volver al calendario</a>
     </main>
   );
 }

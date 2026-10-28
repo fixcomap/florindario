@@ -12,6 +12,7 @@ const plantillas = require('./plantillas');
 const notas = require('./notas');
 const jornadas = require('./jornadas');
 const sueldo = require('./sueldo');
+const exportar = require('./exportar');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use(plantillas);
 app.use(notas);
 app.use(jornadas);
 app.use(sueldo);
+app.use(exportar.router);
 
 app.use((req, res) => res.status(404).json({ error: 'No existe' }));
 

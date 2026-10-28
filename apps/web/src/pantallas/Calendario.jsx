@@ -13,6 +13,7 @@ import FlechaMes from '../componentes/FlechaMes.jsx';
 import ResumenAnio from '../componentes/ResumenAnio.jsx';
 import EditorDia from '../componentes/EditorDia.jsx';
 import AplicarPlantilla from '../componentes/AplicarPlantilla.jsx';
+import Exportar from '../componentes/Exportar.jsx';
 
 // Mes de lunes a domingo: cada día con su tipo y su horario, las horas de cada
 // semana a la derecha y el total del mes abajo. Tocar un día lo edita; en modo
@@ -198,7 +199,7 @@ export default function Calendario({ usuario }) {
         </div>
       </div>
 
-      <p className="total-mes">Este mes: <strong>{horas(totalMes)}</strong></p>
+      <p className="total-mes"><button className="enlace exportar" onClick={() => setHoja({ tipo: 'exportar' })}>⇩ Exportar</button> Este mes: <strong>{horas(totalMes)}</strong></p>
       <Tablero grupos={gruposMes} mes={claveMes} cambiado={cargarNotas} />
       {resumen && <ResumenAnio resumen={resumen} usuario={usuario} />}
 
@@ -253,6 +254,9 @@ export default function Calendario({ usuario }) {
       )}
       {hoja?.tipo === 'nota' && (
         <HojaNota fechas={hoja.fechas} cerrar={() => setHoja(null)} cambiado={() => { cargarNotas(); terminar(); }} />
+      )}
+      {hoja?.tipo === 'exportar' && (
+        <Exportar anio={mes.anio} mes={mes.mes} nombreMes={nombreMes(mes.anio, mes.mes)} cerrar={() => setHoja(null)} />
       )}
       {hoja?.tipo === 'plantilla' && (
         <AplicarPlantilla fechas={hoja.fechas} plantillas={plantillas} jornadas={jornadas} cerrar={() => setHoja(null)} guardado={guardado} />
