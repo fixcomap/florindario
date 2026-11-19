@@ -56,6 +56,9 @@ app.get('/salud', async (req, res) => {
   }
 });
 
+// Uptime check: sin base, para que Neon pueda suspenderse entre visitas.
+app.get('/vivo', (req, res) => res.json({ ok: true }));
+
 app.use('/auth', auth.router);
 app.use(cuentas.router);
 app.use(dias);

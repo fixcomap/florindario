@@ -30,6 +30,10 @@ test('API contra Postgres', { skip: !conBase && 'sin DATABASE_URL' }, async (t) 
     assert.strictEqual((await pedir('/salud')).status, 200);
   });
 
+  await t.test('vivo: responde sin tocar la base', async () => {
+    assert.strictEqual((await pedir('/vivo')).status, 200);
+  });
+
   await t.test('alta y ajustes de vacaciones', async () => {
     await pedir('/cuenta/alta', { method: 'POST', body: { nombre: 'Prueba', acepto: true } });
     const ok = await pedir('/cuenta/ajustes', { method: 'PUT', body: { vacacionesAnuales: 22, vacacionesComputo: 'habiles', diasDisposicion: 1 } });
